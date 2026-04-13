@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Welcome to Afnan ai</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { --header-h: 60px; }
+        html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; background-color: white; -webkit-tap-highlight-color: transparent; font-family: system-ui, -apple-system, sans-serif; }
+        body { display: flex; flex-direction: row; }
+        .hide-scrollbar::-webkit-scrollbar { width: 0px; height: 0px; }
+        .hide-scrollbar { scrollbar-width: none; }
+        .sidebar-transition { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; }
+        #overlay { z-index: 40; }
+        #sidebar { z-index: 50; }
+        header { z-index: 30; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-msg { animation: slideUp 0.3s ease-out forwards; }
+        .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
+        
+        /* Glassy Effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .glass-dark {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        /* Profile Popup */
+        #profilePopup {
+            display: none;
+            position: absolute;
+            bottom: 70px;
+            left: 10px;
+            width: 220px;
+            z-index: 100;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        /* Logout Confirm */
+        #logoutConfirm {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Attachment Menu */
+        #attachMenu {
+            display: none;
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            width: 200px;
+            z-index: 60;
+            border-radius: 1.2rem;
+        }
+
+        .action-icon {
+            cursor: pointer;
+            transition: color 0.2s;
+            color: #9ca3af;
+        }
+        .action-icon:hover { color: #3b82f6; }
+    </style>
+</head>
+<body class="antialiased text-gray-900">
+
+    <div id="overlay" class="fixed inset-0 bg-black/20 backdrop-blur-[2px] hidden transition-opacity duration-300 opacity-0"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-72 bg-[#fcfcfc] border-r border-gray-100 flex flex-col transform -translate-x-full md:translate-x-0 sidebar-transition h-full shadow-lg md:shadow-none">
+        <div class="p-4 flex flex-col gap-4">
+            <button id="newChatBtn" class="flex items-center gap-3 w-full bg-white border border-gray-200 p-3.5 rounded-2xl hover:bg-gray-50 transition-all shadow-sm">
+                <img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" alt="Logo" class="w-5 h-5">
+                <span class="font-bold text-gray-700 text-sm">محادثة جديدة</span>
+            </button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto px-4 space-y-2 hide-scrollbar" id="historyList">
+            <!-- Customer Service Link -->
+            <a href="https://service.afnanai.com" target="_blank" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 transition-all text-gray-600">
+                <i class="fa-solid fa-headset"></i>
+                <span class="text-sm font-medium">خدمة العملاء</span>
+            </a>
+        </div>
+
+        <div class="p-4 border-t border-gray-100 space-y-1 relative">
+            <!-- Profile Trigger -->
+            <div id="profileTrigger" class="flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer hover:bg-gray-200/50 transition-all">
+                <div class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm">M</div>
+                <div class="flex-1 min-w-0"><p class="text-xs font-bold truncate">Mahmoud</p></div>
+                <i class="fa-solid fa-ellipsis-vertical text-gray-300 text-xs"></i>
+            </div>
+
+            <!-- Profile Popup Menu -->
+            <div id="profilePopup" class="glass p-2 space-y-1">
+                <a href="Mahmoud.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">سياسة الخصوصية</a>
+                <a href="Mahmoud2.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">اتفاقية المستخدم</a>
+                <a href="login.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">تسجيل الدخول</a>
+                <button id="logoutBtn" class="w-full text-right p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">تسجيل الخروج</button>
+                <a href="Mahmoud3.html" class="block p-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-all">حذف الحساب</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col min-w-0 h-full relative">
+        <header class="h-[var(--header-h)] flex items-center justify-between px-6 border-b border-gray-50 bg-white/80 backdrop-blur-md shrink-0">
+            <div class="flex items-center gap-4">
+                <button id="sidebarToggle" class="flex flex-col gap-1.5 p-1 md:hidden">
+                    <span class="w-6 h-0.5 bg-gray-600 rounded-full"></span>
+                    <span class="w-4 h-0.5 bg-gray-600 rounded-full"></span>
+                </button>
+                <img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" alt="Logo" class="w-8 h-8">
+                <span class="font-bold text-gray-800">Welcome to Afnan ai</span>
+            </div>
+            <button onclick="window.location.href='login.html'" class="bg-black text-white px-5 py-2 rounded-full font-bold text-[11px] hover:bg-gray-800 transition-all active:scale-95 shadow-md">Login</button>
+        </header>
+
+        <div id="chatWindow" class="flex-1 overflow-y-auto hide-scrollbar scroll-smooth">
+            <div id="emptyView" class="min-h-full flex flex-col items-center justify-center text-center p-12 opacity-30 select-none">
+                <img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" class="w-20 h-20 mb-4 grayscale" alt="Logo">
+                <h2 class="text-2xl font-bold">Welcome to Afnan ai</h2>
+            </div>
+            <div id="messageBox" class="max-w-3xl mx-auto p-4 md:p-8 space-y-10"></div>
+        </div>
+
+        <div class="w-full bg-white p-4 md:p-8 pt-2 shrink-0 safe-pb">
+            <div class="max-w-3xl mx-auto relative">
+                <div class="bg-[#F4F4F4] border border-gray-100 rounded-[2.2rem] p-1.5 flex items-end gap-1.5 focus-within:bg-white shadow-sm transition-all relative">
+                    <!-- Attachment Menu -->
+                    <div id="attachMenu" class="glass p-3 space-y-2">
+                        <div class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-image"></i> <span>صورة</span></div>
+                        <div class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-file"></i> <span>ملف</span></div>
+                    </div>
+                    
+                    <button id="attachBtn" class="w-12 h-12 flex items-center justify-center rounded-full text-gray-400"><i class="fa-solid fa-plus text-xl"></i></button>
+                    <textarea id="chatInput" rows="1" placeholder="اسأل Afnan ai..." class="flex-1 bg-transparent border-none focus:ring-0 py-3 px-2 text-[16px] resize-none max-h-40 hide-scrollbar" dir="auto"></textarea>
+                    <button id="sendBtn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center disabled:opacity-50"><i class="fa-solid fa-arrow-up"></i></button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutConfirm" class="flex">
+        <div class="glass p-8 rounded-3xl text-center max-w-xs w-full mx-4 shadow-2xl">
+            <h3 class="text-xl font-bold mb-6">هل أنت متأكد من تسجيل الخروج؟</h3>
+            <div class="flex gap-4">
+                <button id="confirmYes" class="flex-1 bg-black text-white py-3 rounded-2xl font-bold">نعم</button>
+                <button id="confirmNo" class="flex-1 bg-gray-100 text-gray-800 py-3 rounded-2xl font-bold">لا</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dom = {
+            sidebar: document.getElementById('sidebar'),
+            overlay: document.getElementById('overlay'),
+            chatInput: document.getElementById('chatInput'),
+            sendBtn: document.getElementById('sendBtn'),
+            chatWindow: document.getElementById('chatWindow'),
+            messageBox: document.getElementById('messageBox'),
+            emptyView: document.getElementById('emptyView'),
+            profileTrigger: document.getElementById('profileTrigger'),
+            profilePopup: document.getElementById('profilePopup'),
+            logoutBtn: document.getElementById('logoutBtn'),
+            logoutConfirm: document.getElementById('logoutConfirm'),
+            confirmYes: document.getElementById('confirmYes'),
+            confirmNo: document.getElementById('confirmNo'),
+            attachBtn: document.getElementById('attachBtn'),
+            attachMenu: document.getElementById('attachMenu')
+        };
+
+        const toggleSidebar = (val) => {
+            const isVisible = val !== undefined ? val : dom.sidebar.classList.contains('-translate-x-full');
+            dom.sidebar.classList.toggle('-translate-x-full', !isVisible);
+            dom.overlay.classList.toggle('hidden', !isVisible);
+            requestAnimationFrame(() => dom.overlay.style.opacity = isVisible ? '1' : '0');
+        };
+
+        document.getElementById('sidebarToggle').onclick = () => toggleSidebar();
+        dom.overlay.onclick = () => toggleSidebar(false);
+
+        // Profile Popup Toggle
+        dom.profileTrigger.onclick = (e) => {
+            e.stopPropagation();
+            dom.profilePopup.style.display = dom.profilePopup.style.display === 'block' ? 'none' : 'block';
+        };
+
+        // Attach Menu Toggle
+        dom.attachBtn.onclick = (e) => {
+            e.stopPropagation();
+            dom.attachMenu.style.display = dom.attachMenu.style.display === 'block' ? 'none' : 'block';
+        };
+
+        // Close popups on click outside
+        window.onclick = () => {
+            dom.profilePopup.style.display = 'none';
+            dom.attachMenu.style.display = 'none';
+        };
+
+        // Logout Flow
+        dom.logoutBtn.onclick = () => dom.logoutConfirm.style.display = 'flex';
+        dom.confirmNo.onclick = () => dom.logoutConfirm.style.display = 'none';
+        dom.confirmYes.onclick = () => window.location.href = 'login.html';
+
+        const handleSend = () => {
+            const val = dom.chatInput.value.trim();
+            if(!val) return;
+            dom.emptyView.style.display = 'none';
+            
+            // User Message
+            const userMsg = document.createElement('div');
+            userMsg.className = 'flex justify-end animate-msg';
+            userMsg.innerHTML = `<div class="bg-[#F4F4F4] px-5 py-3.5 rounded-[1.8rem] rounded-tr-md max-w-[85%] text-gray-800 text-[15px]">${val}</div>`;
+            dom.messageBox.appendChild(userMsg);
+            
+            dom.chatInput.value = '';
+            dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
+
+            // Simulated Bot Response
+            setTimeout(() => {
+                const botMsg = document.createElement('div');
+                botMsg.className = 'flex flex-col gap-2 animate-msg';
+                botMsg.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" class="w-6 h-6 mt-1">
+                        <div class="bg-white border border-gray-100 px-5 py-3.5 rounded-[1.8rem] rounded-tl-md max-w-[85%] text-gray-800 text-[15px]">
+                            هذا رد تجريبي من Afnan ai.
+                            <div class="flex gap-4 mt-4 text-xs border-t pt-3">
+                                <i class="fa-regular fa-copy action-icon" title="نسخ"></i>
+                                <i class="fa-solid fa-share-nodes action-icon" title="مشاركة"></i>
+                                <i class="fa-regular fa-thumbs-up action-icon" title="إعجاب"></i>
+                                <i class="fa-regular fa-thumbs-down action-icon" title="لم يعجبني"></i>
+                                <i class="fa-solid fa-rotate-right action-icon" title="إعادة المحاولة"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                dom.messageBox.appendChild(botMsg);
+                dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
+            }, 800);
+        };
+
+        dom.sendBtn.onclick = handleSend;
+        dom.chatInput.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } };
+    </script>
+</body>
+</html>
