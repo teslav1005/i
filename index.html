@@ -22,7 +22,7 @@
         #overlay { z-index: 40; }
         #sidebar { z-index: 50; }
         header { 
-            z-index: 30; 
+            z-index: 100; 
             position: fixed;
             top: 0;
             left: 0;
@@ -30,6 +30,7 @@
             width: 100%;
             height: var(--header-h);
             background: white;
+            transform: translateZ(0); /* Force GPU rendering for stability */
         }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         .animate-msg { animation: slideUp 0.3s ease-out forwards; }
@@ -160,6 +161,34 @@
         }
         window.addEventListener('resize', setAppHeight);
         setAppHeight();
+
+        // Fix header position when keyboard opens
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                const header = document.querySelector('header');
+                if (header) {
+                    header.style.top = window.visualViewport.offsetTop + 'px';
+                }
+            });
+            window.visualViewport.addEventListener('scroll', () => {
+                const header = document.querySelector('header');
+                if (header) {
+                    header.style.top = window.visualViewport.offsetTop + 'px';
+                }
+            });
+        }
+
+        // URL Masking: Change URL to a 73-character random string for security
+        function maskURL() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-';
+            let randomID = '';
+            for (let i = 0; i < 73; i++) {
+                randomID += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            const newURL = window.location.origin + window.location.pathname.replace(/\/(index|login)\.html$/, '/') + randomID;
+            window.history.replaceState(null, '', newURL);
+        }
+        window.addEventListener('load', maskURL);
 
         // Pull to Refresh Logic
         let startY = 0;
