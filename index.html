@@ -23,11 +23,8 @@
         #overlay { z-index: 40; }
         #sidebar { z-index: 50; }
         header { 
-            z-index: 1000; 
-            position: fixed;
-            top: 0 !important;
-            left: 0;
-            right: 0;
+            z-index: 100; 
+            position: relative;
             width: 100%;
             height: var(--header-h);
             background: rgba(255, 255, 255, 0.9);
@@ -161,6 +158,26 @@
             outline: none !important;
             box-shadow: none !important;
         }
+
+        /* Image Preview */
+        .image-preview {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 1rem;
+            object-fit: cover;
+            margin-top: 8px;
+        }
+
+        /* Guest Warning */
+        .guest-warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 12px;
+            border-radius: 0.5rem;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: #92400e;
+        }
     </style>
     <script>
         function setAppHeight() {
@@ -259,29 +276,13 @@
             </button>
         </div>
 
-        <div class="p-4 border-t border-gray-100 space-y-1 relative">
-            <!-- Profile Section -->
-            <div id="profileTrigger" class="flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer hover:bg-gray-200/50 transition-all">
-                <img id="profileImg" src="" alt="Profile" class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm object-cover">
-                <div class="flex-1 min-w-0">
-                    <p id="profileName" class="text-xs font-bold truncate">User</p>
-                    <p id="profileEmail" class="text-xs text-gray-500 truncate">email@example.com</p>
-                </div>
-                <i class="fa-solid fa-ellipsis-vertical text-gray-300 text-xs"></i>
-            </div>
-
-            <!-- Profile Popup Menu -->
-            <div id="profilePopup" class="glass p-2 space-y-1">
-                <a href="Mahmoud.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">سياسة الخصوصية</a>
-                <a href="Mahmoud2.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">اتفاقية المستخدم</a>
-                <button id="logoutBtn" class="w-full text-right p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">تسجيل الخروج</button>
-                <button id="deleteAccountBtn" class="w-full text-right p-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-all">حذف الحساب</button>
-            </div>
+        <div class="p-4 border-t border-gray-100 space-y-1 relative" id="profileSection">
+            <!-- Profile Section (Hidden for guests) -->
         </div>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col min-w-0 h-full relative pt-[var(--header-h)]">
+    <main class="flex-1 flex flex-col min-w-0 h-full relative">
         <header class="h-[var(--header-h)] flex items-center justify-between px-6 border-b border-gray-50 bg-white/80 backdrop-blur-md shrink-0">
             <div class="flex items-center gap-4">
                 <button id="sidebarToggle" class="flex flex-col gap-1.5 p-1 md:hidden">
@@ -304,6 +305,11 @@
 
         <div class="w-full bg-white p-4 md:p-8 pt-2 shrink-0 safe-pb">
             <div class="max-w-3xl mx-auto relative">
+                <!-- Guest Warning -->
+                <div id="guestWarning" class="guest-warning hidden">
+                    ⚠️ أنت تستخدم النسخة المجانية. بعد رسالة واحدة، يجب عليك تسجيل الدخول للمتابعة أو الانتظار 4 ساعات.
+                </div>
+
                 <div class="chat-input-container bg-[#F4F4F4] rounded-[2.2rem] p-1.5 flex items-end gap-1.5 focus-within:bg-white shadow-sm transition-all relative">
                     <!-- Attachment Menu -->
                     <div id="attachMenu" class="glass p-3 space-y-2">
@@ -356,28 +362,132 @@
 
         let currentUser = null;
         let currentChatId = null;
+        let guestMessageCount = 0;
+        let guestLastMessageTime = null;
+        let guestBlocked = false;
+
+        // Generate 24-character ID
+        const generateId = () => {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let id = '';
+            for (let i = 0; i < 24; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return id;
+        };
+
+        // Get or create guest session ID
+        const getGuestSessionId = () => {
+            let sessionId = sessionStorage.getItem('guestSessionId');
+            if (!sessionId) {
+                sessionId = generateId();
+                sessionStorage.setItem('guestSessionId', sessionId);
+            }
+            return sessionId;
+        };
 
         // Check authentication
         onAuthStateChanged(auth, async (user) => {
             const loginBtnHeader = document.getElementById('loginBtnHeader');
+            const profileSection = document.getElementById('profileSection');
+            const guestWarning = document.getElementById('guestWarning');
+
             if (!user) {
                 currentUser = null;
+                guestMessageCount = 0;
+                guestLastMessageTime = null;
+                guestBlocked = false;
+                
                 if (loginBtnHeader) loginBtnHeader.style.display = 'block';
-                document.getElementById('profileName').textContent = 'User';
-                document.getElementById('profileEmail').textContent = 'Guest';
-                document.getElementById('profileImg').src = 'https://via.placeholder.com/40';
+                profileSection.innerHTML = '';
+                guestWarning.classList.remove('hidden');
                 dom.historyList.innerHTML = '';
             } else {
                 currentUser = user;
                 if (loginBtnHeader) loginBtnHeader.style.display = 'none';
-                document.getElementById('profileName').textContent = user.displayName || 'User';
-                document.getElementById('profileEmail').textContent = user.email || 'email@example.com';
-                document.getElementById('profileImg').src = user.photoURL || 'https://via.placeholder.com/40';
+                guestWarning.classList.add('hidden');
+                
+                // Create profile section for logged-in users
+                profileSection.innerHTML = `
+                    <div id="profileTrigger" class="flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer hover:bg-gray-200/50 transition-all">
+                        <img id="profileImg" src="${user.photoURL || 'https://via.placeholder.com/40'}" alt="Profile" class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm object-cover">
+                        <div class="flex-1 min-w-0">
+                            <p id="profileName" class="text-xs font-bold truncate">${user.displayName || 'User'}</p>
+                            <p id="profileEmail" class="text-xs text-gray-500 truncate">${user.email || 'email@example.com'}</p>
+                        </div>
+                        <i class="fa-solid fa-ellipsis-vertical text-gray-300 text-xs"></i>
+                    </div>
+
+                    <div id="profilePopup" class="glass p-2 space-y-1">
+                        <a href="Mahmoud.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">سياسة الخصوصية</a>
+                        <a href="Mahmoud2.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">اتفاقية المستخدم</a>
+                        <button id="logoutBtn" class="w-full text-right p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">تسجيل الخروج</button>
+                        <button id="deleteAccountBtn" class="w-full text-right p-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-all">حذف الحساب</button>
+                    </div>
+                `;
+
+                // Re-attach event listeners for profile
+                setupProfileListeners();
                 
                 // Load chat history
                 await loadChatHistory();
             }
         });
+
+        const setupProfileListeners = () => {
+            const profileTrigger = document.getElementById('profileTrigger');
+            const profilePopup = document.getElementById('profilePopup');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+
+            if (profileTrigger) {
+                profileTrigger.onclick = (e) => {
+                    e.stopPropagation();
+                    profilePopup.style.display = profilePopup.style.display === 'block' ? 'none' : 'block';
+                };
+            }
+
+            if (logoutBtn) {
+                logoutBtn.onclick = () => dom.logoutConfirm.style.display = 'flex';
+            }
+
+            if (deleteAccountBtn) {
+                deleteAccountBtn.onclick = async () => {
+                    if (currentUser) {
+                        const verificationCode = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
+                        
+                        try {
+                            await setDoc(doc(db, 'deleteRequests', currentUser.uid), {
+                                email: currentUser.email,
+                                code: verificationCode,
+                                createdAt: new Date(),
+                                expiresAt: new Date(Date.now() + 15 * 60 * 1000)
+                            });
+
+                            const response = await fetch('https://your-backend-domain.com/send-verification-email', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    email: currentUser.email,
+                                    code: verificationCode,
+                                    name: currentUser.displayName || 'User'
+                                })
+                            });
+
+                            if (response.ok) {
+                                localStorage.setItem('deleteRequestEmail', currentUser.email);
+                                window.location.href = 'Mahmoud3.html';
+                            } else {
+                                alert('خطأ في إرسال رمز التحقق. حاول مرة أخرى.');
+                            }
+                        } catch (error) {
+                            console.error('Error:', error);
+                            alert('خطأ: ' + error.message);
+                        }
+                    }
+                };
+            }
+        };
 
         document.addEventListener('click', (e) => {
             if (e.target && e.target.id === 'loginBtnHeader') {
@@ -393,10 +503,6 @@
             chatWindow: document.getElementById('chatWindow'),
             messageBox: document.getElementById('messageBox'),
             emptyView: document.getElementById('emptyView'),
-            profileTrigger: document.getElementById('profileTrigger'),
-            profilePopup: document.getElementById('profilePopup'),
-            logoutBtn: document.getElementById('logoutBtn'),
-            deleteAccountBtn: document.getElementById('deleteAccountBtn'),
             logoutConfirm: document.getElementById('logoutConfirm'),
             confirmYes: document.getElementById('confirmYes'),
             confirmNo: document.getElementById('confirmNo'),
@@ -416,12 +522,6 @@
         document.getElementById('sidebarToggle').onclick = () => toggleSidebar();
         dom.overlay.onclick = () => toggleSidebar(false);
 
-        // Profile Popup Toggle
-        dom.profileTrigger.onclick = (e) => {
-            e.stopPropagation();
-            dom.profilePopup.style.display = dom.profilePopup.style.display === 'block' ? 'none' : 'block';
-        };
-
         // Attach Menu Toggle
         dom.attachBtn.onclick = (e) => {
             e.stopPropagation();
@@ -437,12 +537,21 @@
         imageInput.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
-                const userMsg = document.createElement('div');
-                userMsg.className = 'flex justify-end animate-msg';
-                userMsg.innerHTML = `<div class="bg-[#F4F4F4] px-5 py-3.5 rounded-[1.8rem] rounded-tr-md max-w-[85%] text-gray-800 text-[15px]">تم اختيار صورة: ${file.name}</div>`;
-                dom.messageBox.appendChild(userMsg);
-                dom.attachMenu.style.display = 'none';
-                dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const userMsg = document.createElement('div');
+                    userMsg.className = 'flex justify-end animate-msg';
+                    userMsg.innerHTML = `
+                        <div class="bg-[#F4F4F4] px-5 py-3.5 rounded-[1.8rem] rounded-tr-md max-w-[85%] text-gray-800 text-[15px]">
+                            <img src="${event.target.result}" alt="صورة مرفقة" class="image-preview">
+                            <p class="mt-2 text-sm">${file.name}</p>
+                        </div>
+                    `;
+                    dom.messageBox.appendChild(userMsg);
+                    dom.attachMenu.style.display = 'none';
+                    dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
+                };
+                reader.readAsDataURL(file);
             }
         };
 
@@ -451,7 +560,7 @@
             if (file) {
                 const userMsg = document.createElement('div');
                 userMsg.className = 'flex justify-end animate-msg';
-                userMsg.innerHTML = `<div class="bg-[#F4F4F4] px-5 py-3.5 rounded-[1.8rem] rounded-tr-md max-w-[85%] text-gray-800 text-[15px]">تم اختيار ملف: ${file.name}</div>`;
+                userMsg.innerHTML = `<div class="bg-[#F4F4F4] px-5 py-3.5 rounded-[1.8rem] rounded-tr-md max-w-[85%] text-gray-800 text-[15px]"><i class="fa-solid fa-file"></i> ${file.name}</div>`;
                 dom.messageBox.appendChild(userMsg);
                 dom.attachMenu.style.display = 'none';
                 dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
@@ -460,55 +569,16 @@
 
         // Close popups on click outside
         window.onclick = () => {
-            dom.profilePopup.style.display = 'none';
+            const profilePopup = document.getElementById('profilePopup');
+            if (profilePopup) profilePopup.style.display = 'none';
             dom.attachMenu.style.display = 'none';
         };
 
         // Logout Flow
-        dom.logoutBtn.onclick = () => dom.logoutConfirm.style.display = 'flex';
         dom.confirmNo.onclick = () => dom.logoutConfirm.style.display = 'none';
         dom.confirmYes.onclick = async () => {
             await signOut(auth);
             window.location.href = 'index.html';
-        };
-
-        // Delete Account - Generate Code
-        dom.deleteAccountBtn.onclick = async () => {
-            if (currentUser) {
-                const verificationCode = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
-                
-                try {
-                    // Store verification code in Firestore
-                    await setDoc(doc(db, 'deleteRequests', currentUser.uid), {
-                        email: currentUser.email,
-                        code: verificationCode,
-                        createdAt: new Date(),
-                        expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
-                    });
-
-                    // Send email with verification code
-                    const response = await fetch('https://your-backend-domain.com/send-verification-email', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: currentUser.email,
-                            code: verificationCode,
-                            name: currentUser.displayName || 'User'
-                        })
-                    });
-
-                    if (response.ok) {
-                        localStorage.setItem('deleteRequestCode', verificationCode);
-                        localStorage.setItem('deleteRequestEmail', currentUser.email);
-                        window.location.href = 'Mahmoud3.html';
-                    } else {
-                        alert('خطأ في إرسال رمز التحقق. حاول مرة أخرى.');
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('خطأ: ' + error.message);
-                }
-            }
         };
 
         // New Chat
@@ -517,6 +587,7 @@
             dom.emptyView.style.display = 'flex';
             dom.chatInput.value = '';
             currentChatId = null;
+            guestMessageCount = 0;
         };
 
         // Load Chat History
@@ -552,9 +623,15 @@
                 chatData.messages.forEach(msg => {
                     const msgDiv = document.createElement('div');
                     msgDiv.className = `flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-msg`;
+                    
+                    let msgContent = msg.text;
+                    if (msg.imageUrl) {
+                        msgContent = `<img src="${msg.imageUrl}" alt="صورة" class="image-preview"><p class="mt-2">${msg.text}</p>`;
+                    }
+                    
                     msgDiv.innerHTML = `
                         <div class="${msg.sender === 'user' ? 'bg-[#F4F4F4]' : 'bg-white border border-gray-100'} px-5 py-3.5 rounded-[1.8rem] ${msg.sender === 'user' ? 'rounded-tr-md' : 'rounded-tl-md'} max-w-[85%] text-gray-800 text-[15px]">
-                            ${msg.text}
+                            ${msgContent}
                         </div>
                     `;
                     dom.messageBox.appendChild(msgDiv);
@@ -580,6 +657,30 @@
         const handleSend = async () => {
             const val = dom.chatInput.value.trim();
             if(!val) return;
+
+            // Check guest restrictions
+            if (!currentUser) {
+                guestMessageCount++;
+                guestLastMessageTime = Date.now();
+
+                if (guestMessageCount > 1) {
+                    guestBlocked = true;
+                    dom.chatInput.disabled = true;
+                    dom.sendBtn.disabled = true;
+                    
+                    const warningMsg = document.createElement('div');
+                    warningMsg.className = 'flex justify-center animate-msg';
+                    warningMsg.innerHTML = `
+                        <div class="bg-yellow-50 border border-yellow-200 px-5 py-3.5 rounded-[1.8rem] max-w-[85%] text-yellow-800 text-[15px] text-center">
+                            <p class="font-bold mb-2">⏱️ انتظر 4 ساعات أو سجل الدخول</p>
+                            <p class="text-sm">لقد وصلت إلى حد الرسائل المجانية. يمكنك تسجيل الدخول للمتابعة أو الانتظار 4 ساعات.</p>
+                        </div>
+                    `;
+                    dom.messageBox.appendChild(warningMsg);
+                    dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
+                    return;
+                }
+            }
             
             dom.emptyView.style.display = 'none';
             
@@ -634,21 +735,31 @@
 
                 // Save to Firestore
                 try {
-                    if (!currentChatId) {
-                        const chatRef = await addDoc(collection(db, 'chats'), {
-                            userId: currentUser.uid,
-                            title: userMessageText.substring(0, 30),
-                            messages: [
-                                { sender: 'user', text: userMessageText },
-                                { sender: 'bot', text: aiResponse }
-                            ],
-                            createdAt: new Date(),
-                            updatedAt: new Date()
-                        });
-                        currentChatId = chatRef.id;
+                    if (currentUser) {
+                        const messageId = generateId();
+                        if (!currentChatId) {
+                            const chatId = generateId();
+                            const chatRef = await addDoc(collection(db, 'chats'), {
+                                chatId: chatId,
+                                userId: currentUser.uid,
+                                title: userMessageText.substring(0, 30),
+                                messages: [
+                                    { messageId: generateId(), sender: 'user', text: userMessageText, timestamp: new Date() },
+                                    { messageId: generateId(), sender: 'bot', text: aiResponse, timestamp: new Date() }
+                                ],
+                                createdAt: new Date(),
+                                updatedAt: new Date()
+                            });
+                            currentChatId = chatRef.id;
+                        } else {
+                            // Update existing chat
+                            const chatRef = doc(db, 'chats', currentChatId);
+                            const chatData = await getDocs(query(collection(db, 'chats'), where('__name__', '==', currentChatId)));
+                            // Add messages to existing chat
+                        }
+                        
+                        await loadChatHistory();
                     }
-                    
-                    await loadChatHistory();
                 } catch (error) {
                     console.error('Error saving chat:', error);
                 }
@@ -671,7 +782,7 @@
         window.showShareModal = () => {
             const isPublic = confirm("هل تريد مشاركة المحادثة بشكل عام؟\n(موافق = عام، إلغاء = خاص)");
             const type = isPublic ? "عامة" : "خاصة";
-            const randomID = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            const randomID = generateId();
             const shareURL = `${window.location.origin}${window.location.pathname}?share=${randomID}`;
             
             const modal = document.createElement('div');
