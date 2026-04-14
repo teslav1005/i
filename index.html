@@ -77,6 +77,39 @@
             color: #9ca3af;
         }
         .action-icon:hover { color: #3b82f6; }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #9ca3af;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                opacity: 0.5;
+                transform: translateY(0);
+            }
+            30% {
+                opacity: 1;
+                transform: translateY(-10px);
+            }
+        }
     </style>
 </head>
 <body class="antialiased text-gray-900">
@@ -93,6 +126,10 @@
         </div>
         
         <div class="flex-1 overflow-y-auto px-4 space-y-2 hide-scrollbar" id="historyList">
+            <!-- Chat History -->
+        </div>
+
+        <div class="p-4 border-t border-gray-100 space-y-1">
             <!-- Customer Service Link -->
             <a href="https://service.afnanai.com" target="_blank" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 transition-all text-gray-600">
                 <i class="fa-solid fa-headset"></i>
@@ -103,8 +140,8 @@
         <div class="p-4 border-t border-gray-100 space-y-1 relative">
             <!-- Profile Trigger -->
             <div id="profileTrigger" class="flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer hover:bg-gray-200/50 transition-all">
-                <div class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm">M</div>
-                <div class="flex-1 min-w-0"><p class="text-xs font-bold truncate">Mahmoud</p></div>
+                <img id="profileImg" src="" alt="Profile" class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm">
+                <div class="flex-1 min-w-0"><p id="profileName" class="text-xs font-bold truncate">User</p></div>
                 <i class="fa-solid fa-ellipsis-vertical text-gray-300 text-xs"></i>
             </div>
 
@@ -112,7 +149,6 @@
             <div id="profilePopup" class="glass p-2 space-y-1">
                 <a href="Mahmoud.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">سياسة الخصوصية</a>
                 <a href="Mahmoud2.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">اتفاقية المستخدم</a>
-                <a href="login.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">تسجيل الدخول</a>
                 <button id="logoutBtn" class="w-full text-right p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">تسجيل الخروج</button>
                 <a href="Mahmoud3.html" class="block p-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-all">حذف الحساب</a>
             </div>
@@ -130,7 +166,6 @@
                 <img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" alt="Logo" class="w-8 h-8">
                 <span class="font-bold text-gray-800">Welcome to Afnan ai</span>
             </div>
-            <button onclick="window.location.href='login.html'" class="bg-black text-white px-5 py-2 rounded-full font-bold text-[11px] hover:bg-gray-800 transition-all active:scale-95 shadow-md">Login</button>
         </header>
 
         <div id="chatWindow" class="flex-1 overflow-y-auto hide-scrollbar scroll-smooth">
@@ -169,7 +204,37 @@
         </div>
     </div>
 
-    <script>
+    <!-- Firebase & AI Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC89TjMlrtfh88o_HDgCHD42hAvXMZ6fQM",
+            authDomain: "afnan-49d21.firebaseapp.com",
+            projectId: "afnan-49d21",
+            storageBucket: "afnan-49d21.firebasestorage.app",
+            messagingSenderId: "886430112619",
+            appId: "1:886430112619:web:278b9ea777f4dda77b0a2e",
+            measurementId: "G-EWMJ8ZPY7X"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const analytics = getAnalytics(app);
+
+        // Check authentication
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+            } else {
+                document.getElementById('profileName').textContent = user.displayName || 'User';
+                document.getElementById('profileImg').src = user.photoURL || 'https://via.placeholder.com/40';
+                localStorage.setItem('userEmail', user.email);
+            }
+        });
+
         const dom = {
             sidebar: document.getElementById('sidebar'),
             overlay: document.getElementById('overlay'),
@@ -185,7 +250,8 @@
             confirmYes: document.getElementById('confirmYes'),
             confirmNo: document.getElementById('confirmNo'),
             attachBtn: document.getElementById('attachBtn'),
-            attachMenu: document.getElementById('attachMenu')
+            attachMenu: document.getElementById('attachMenu'),
+            newChatBtn: document.getElementById('newChatBtn')
         };
 
         const toggleSidebar = (val) => {
@@ -219,11 +285,45 @@
         // Logout Flow
         dom.logoutBtn.onclick = () => dom.logoutConfirm.style.display = 'flex';
         dom.confirmNo.onclick = () => dom.logoutConfirm.style.display = 'none';
-        dom.confirmYes.onclick = () => window.location.href = 'login.html';
+        dom.confirmYes.onclick = async () => {
+            await signOut(auth);
+            window.location.href = 'login.html';
+        };
 
-        const handleSend = () => {
+        // New Chat
+        dom.newChatBtn.onclick = () => {
+            dom.messageBox.innerHTML = '';
+            dom.emptyView.style.display = 'flex';
+            dom.chatInput.value = '';
+        };
+
+        // AI Response Function (Using Gemini API or Mock)
+        const getAIResponse = async (userMessage) => {
+            try {
+                // Using Google Generative AI (Gemini)
+                const apiKey = 'AIzaSyC89TjMlrtfh88o_HDgCHD42hAvXMZ6fQM'; // Firebase API Key (Limited)
+                
+                // For production, use a proper backend or Gemini API
+                // This is a mock response for demonstration
+                const responses = [
+                    'هذا رد تفاعلي من Afnan ai. كيف يمكنني مساعدتك أكثر؟',
+                    'شكراً على سؤالك! أنا هنا لمساعدتك في أي استفسار.',
+                    'هذا موضوع مثير للاهتمام. دعني أساعدك في الحصول على الإجابة.',
+                    'أفهم سؤالك. دعني أقدم لك أفضل إجابة ممكنة.',
+                    'رائع! أنا مستعد لمساعدتك في هذا الموضوع.'
+                ];
+                
+                return responses[Math.floor(Math.random() * responses.length)];
+            } catch (error) {
+                console.error('AI Error:', error);
+                return 'عذراً، حدث خطأ في معالجة طلبك. يرجى المحاولة مرة أخرى.';
+            }
+        };
+
+        const handleSend = async () => {
             const val = dom.chatInput.value.trim();
             if(!val) return;
+            
             dom.emptyView.style.display = 'none';
             
             // User Message
@@ -235,17 +335,34 @@
             dom.chatInput.value = '';
             dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
 
-            // Simulated Bot Response
-            setTimeout(() => {
+            // Typing Indicator
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'flex items-start gap-3 animate-msg';
+            typingDiv.innerHTML = `
+                <img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" class="w-6 h-6 mt-1">
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            dom.messageBox.appendChild(typingDiv);
+            dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
+
+            // Get AI Response
+            setTimeout(async () => {
+                const aiResponse = await getAIResponse(val);
+                typingDiv.remove();
+
                 const botMsg = document.createElement('div');
                 botMsg.className = 'flex flex-col gap-2 animate-msg';
                 botMsg.innerHTML = `
                     <div class="flex items-start gap-3">
                         <img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" class="w-6 h-6 mt-1">
                         <div class="bg-white border border-gray-100 px-5 py-3.5 rounded-[1.8rem] rounded-tl-md max-w-[85%] text-gray-800 text-[15px]">
-                            هذا رد تجريبي من Afnan ai.
+                            ${aiResponse}
                             <div class="flex gap-4 mt-4 text-xs border-t pt-3">
-                                <i class="fa-regular fa-copy action-icon" title="نسخ"></i>
+                                <i class="fa-regular fa-copy action-icon" title="نسخ" onclick="navigator.clipboard.writeText('${aiResponse}')"></i>
                                 <i class="fa-solid fa-share-nodes action-icon" title="مشاركة"></i>
                                 <i class="fa-regular fa-thumbs-up action-icon" title="إعجاب"></i>
                                 <i class="fa-regular fa-thumbs-down action-icon" title="لم يعجبني"></i>
@@ -256,7 +373,7 @@
                 `;
                 dom.messageBox.appendChild(botMsg);
                 dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
-            }, 800);
+            }, 1000);
         };
 
         dom.sendBtn.onclick = handleSend;
