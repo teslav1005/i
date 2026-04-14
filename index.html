@@ -9,7 +9,7 @@
     
     <style>
         :root { --header-h: 60px; }
-        html, body { height: var(--app-height); width: 100%; margin: 0; padding: 0; overflow: hidden; background-color: white; -webkit-tap-highlight-color: transparent; font-family: system-ui, -apple-system, sans-serif; }
+        html, body { height: var(--app-height); width: 100%; margin: 0; padding: 0; overflow: auto; overscroll-behavior: contain; background-color: white; -webkit-tap-highlight-color: transparent; font-family: system-ui, -apple-system, sans-serif; }
         @supports (-webkit-touch-callout: none) {
             body {
                 height: -webkit-fill-available;
@@ -130,9 +130,47 @@
         }
         window.addEventListener('resize', setAppHeight);
         setAppHeight();
+
+        // Pull to Refresh Logic
+        let startY = 0;
+        let pulling = false;
+        document.addEventListener("DOMContentLoaded", () => {
+            const indicator = document.getElementById("pullRefresh");
+            window.addEventListener("touchstart", (e) => {
+                if (window.scrollY === 0) {
+                    startY = e.touches[0].clientY;
+                    pulling = true;
+                }
+            });
+            window.addEventListener("touchmove", (e) => {
+                if (!pulling) return;
+                let diff = e.touches[0].clientY - startY;
+                if (diff > 0) {
+                    indicator.style.top = Math.min(diff - 50, 20) + "px";
+                }
+                if (diff > 120) {
+                    indicator.innerText = "↻ سيتم التحديث...";
+                } else {
+                    indicator.innerText = "⟳ اسحب للتحديث";
+                }
+            });
+            window.addEventListener("touchend", (e) => {
+                if (!pulling) return;
+                let diff = e.changedTouches[0].clientY - startY;
+                indicator.style.top = "-50px";
+                pulling = false;
+                if (diff > 120) {
+                    location.reload();
+                }
+            });
+        });
     </script>
 </head>
 <body class="antialiased text-gray-900">
+
+    <div id="pullRefresh" style="position: fixed; top: -50px; left: 0; right: 0; text-align: center; transition: 0.3s; font-size: 14px; color: gray; z-index: 1000;">
+        ⟳ اسحب للتحديث
+    </div>
 
     <div id="overlay" class="fixed inset-0 bg-black/20 backdrop-blur-[2px] hidden transition-opacity duration-300 opacity-0"></div>
 
