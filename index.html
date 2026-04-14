@@ -23,16 +23,24 @@
         #overlay { z-index: 40; }
         #sidebar { z-index: 50; }
         header { 
-            z-index: 100; 
+            z-index: 1000; 
             position: fixed;
             top: 0 !important;
             left: 0;
             right: 0;
             width: 100%;
             height: var(--header-h);
-            background: white;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             transform: translateZ(0);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        /* ضمان أن المحتوى يمر تحت الهيدر بسلاسة */
+        #chatWindow {
+            padding-top: 10px;
+            margin-top: 0;
         }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         .animate-msg { animation: slideUp 0.3s ease-out forwards; }
@@ -244,6 +252,11 @@
                 <i class="fa-solid fa-headset"></i>
                 <span class="text-sm font-medium">خدمة العملاء</span>
             </a>
+            <!-- Shared Links Management -->
+            <button onclick="showShareModal()" class="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-gray-100 transition-all text-gray-600">
+                <i class="fa-solid fa-share-nodes"></i>
+                <span class="text-sm font-medium">إدارة الروابط</span>
+            </button>
         </div>
 
         <div class="p-4 border-t border-gray-100 space-y-1 relative">
@@ -294,11 +307,13 @@
                 <div class="chat-input-container bg-[#F4F4F4] rounded-[2.2rem] p-1.5 flex items-end gap-1.5 focus-within:bg-white shadow-sm transition-all relative">
                     <!-- Attachment Menu -->
                     <div id="attachMenu" class="glass p-3 space-y-2">
-                        <div class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-image"></i> <span>صورة</span></div>
-                        <div class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-file"></i> <span>ملف</span></div>
+                        <div id="pickImage" class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-image"></i> <span>صورة</span></div>
+                        <div id="pickFile" class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-file"></i> <span>ملف</span></div>
                     </div>
                     
                     <button id="attachBtn" class="w-12 h-12 flex items-center justify-center rounded-full text-gray-400"><i class="fa-solid fa-plus text-xl"></i></button>
+                    <input type="file" id="imageInput" accept="image/*" class="hidden">
+                    <input type="file" id="fileInput" class="hidden">
                     <textarea id="chatInput" rows="1" placeholder="اسأل Afnan ai..." class="flex-1 bg-transparent border-none focus:ring-0 py-3 px-2 text-[16px] resize-none max-h-40 hide-scrollbar" dir="auto"></textarea>
                     <button id="sendBtn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center disabled:opacity-50"><i class="fa-solid fa-arrow-up"></i></button>
                 </div>
@@ -411,6 +426,36 @@
         dom.attachBtn.onclick = (e) => {
             e.stopPropagation();
             dom.attachMenu.style.display = dom.attachMenu.style.display === 'block' ? 'none' : 'block';
+        };
+
+        // File Picking Logic
+        const imageInput = document.getElementById('imageInput');
+        const fileInput = document.getElementById('fileInput');
+        document.getElementById('pickImage').onclick = () => imageInput.click();
+        document.getElementById('pickFile').onclick = () => fileInput.click();
+
+        imageInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const userMsg = document.createElement('div');
+                userMsg.className = 'flex justify-end animate-msg';
+                userMsg.innerHTML = `<div class="bg-[#F4F4F4] px-5 py-3.5 rounded-[1.8rem] rounded-tr-md max-w-[85%] text-gray-800 text-[15px]">تم اختيار صورة: ${file.name}</div>`;
+                dom.messageBox.appendChild(userMsg);
+                dom.attachMenu.style.display = 'none';
+                dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
+            }
+        };
+
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const userMsg = document.createElement('div');
+                userMsg.className = 'flex justify-end animate-msg';
+                userMsg.innerHTML = `<div class="bg-[#F4F4F4] px-5 py-3.5 rounded-[1.8rem] rounded-tr-md max-w-[85%] text-gray-800 text-[15px]">تم اختيار ملف: ${file.name}</div>`;
+                dom.messageBox.appendChild(userMsg);
+                dom.attachMenu.style.display = 'none';
+                dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
+            }
         };
 
         // Close popups on click outside
@@ -575,11 +620,11 @@
                         <div class="bg-white border border-gray-100 px-5 py-3.5 rounded-[1.8rem] rounded-tl-md max-w-[85%] text-gray-800 text-[15px]">
                             ${aiResponse}
                             <div class="flex gap-4 mt-4 text-xs border-t pt-3">
-                                <i class="fa-regular fa-copy action-icon" title="نسخ" onclick="navigator.clipboard.writeText('${aiResponse}')"></i>
-                                <i class="fa-solid fa-share-nodes action-icon" title="مشاركة"></i>
-                                <i class="fa-regular fa-thumbs-up action-icon" title="إعجاب"></i>
-                                <i class="fa-regular fa-thumbs-down action-icon" title="لم يعجبني"></i>
-                                <i class="fa-solid fa-rotate-right action-icon" title="إعادة المحاولة"></i>
+                                <i class="fa-regular fa-copy action-icon" title="نسخ" onclick="navigator.clipboard.writeText('${aiResponse.replace(/'/g, "\\'")}'); toast('تم النسخ')"></i>
+                                <i class="fa-solid fa-share-nodes action-icon" title="مشاركة" onclick="showShareModal()"></i>
+                                <i class="fa-regular fa-thumbs-up action-icon" title="إعجاب" onclick="toast('تم الإعجاب')"></i>
+                                <i class="fa-regular fa-thumbs-down action-icon" title="لم يعجبني" onclick="toast('لم يتم الإعجاب')"></i>
+                                <i class="fa-solid fa-rotate-right action-icon" title="إعادة المحاولة" onclick="retryMessage('${userMessageText.replace(/'/g, "\\'")}')"></i>
                             </div>
                         </div>
                     </div>
@@ -608,6 +653,40 @@
                     console.error('Error saving chat:', error);
                 }
             }, 1000);
+        };
+
+        window.toast = (msg) => {
+            const t = document.createElement('div');
+            t.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-2.5 rounded-full text-sm z-[2000] animate-msg shadow-lg';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2000);
+        };
+
+        window.retryMessage = (text) => {
+            dom.chatInput.value = text;
+            handleSend();
+        };
+
+        window.showShareModal = () => {
+            const isPublic = confirm("هل تريد مشاركة المحادثة بشكل عام؟\n(موافق = عام، إلغاء = خاص)");
+            const type = isPublic ? "عامة" : "خاصة";
+            const randomID = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            const shareURL = `${window.location.origin}${window.location.pathname}?share=${randomID}`;
+            
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-[3000] p-4';
+            modal.innerHTML = `
+                <div class="glass p-8 rounded-3xl max-w-sm w-full text-center space-y-4 shadow-2xl">
+                    <h3 class="text-xl font-bold">رابط مشاركة ${type}</h3>
+                    <p class="text-sm text-gray-500 break-all bg-gray-100 p-3 rounded-xl">${shareURL}</p>
+                    <div class="flex gap-3">
+                        <button onclick="navigator.clipboard.writeText('${shareURL}'); toast('تم نسخ الرابط'); this.parentElement.parentElement.parentElement.remove()" class="flex-1 bg-black text-white py-3 rounded-2xl font-bold">نسخ الرابط</button>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="flex-1 bg-gray-100 py-3 rounded-2xl font-bold">إغلاق</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
         };
 
         dom.sendBtn.onclick = handleSend;
