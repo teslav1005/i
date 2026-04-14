@@ -9,14 +9,24 @@
     
     <style>
         :root { --header-h: 60px; }
-        html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; background-color: white; -webkit-tap-highlight-color: transparent; font-family: system-ui, -apple-system, sans-serif; }
+        html, body { height: var(--app-height); width: 100%; margin: 0; padding: 0; overflow: hidden; background-color: white; -webkit-tap-highlight-color: transparent; font-family: system-ui, -apple-system, sans-serif; }
+        @supports (-webkit-touch-callout: none) {
+            body {
+                height: -webkit-fill-available;
+            }
+        }
         body { display: flex; flex-direction: row; }
         .hide-scrollbar::-webkit-scrollbar { width: 0px; height: 0px; }
         .hide-scrollbar { scrollbar-width: none; }
         .sidebar-transition { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; }
         #overlay { z-index: 40; }
         #sidebar { z-index: 50; }
-        header { z-index: 30; }
+        header { 
+            z-index: 30; 
+            position: fixed;
+            top: 0;
+            width: 100%;
+        }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         .animate-msg { animation: slideUp 0.3s ease-out forwards; }
         .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
@@ -111,6 +121,16 @@
             border: none !important;
         }
     </style>
+    <script>
+        function setAppHeight() {
+            document.documentElement.style.setProperty(
+                '--app-height',
+                `${window.innerHeight}px`
+            );
+        }
+        window.addEventListener('resize', setAppHeight);
+        setAppHeight();
+    </script>
 </head>
 <body class="antialiased text-gray-900">
 
@@ -159,7 +179,7 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col min-w-0 h-full relative">
+    <main class="flex-1 flex flex-col min-w-0 h-full relative pt-[var(--header-h)]">
         <header class="h-[var(--header-h)] flex items-center justify-between px-6 border-b border-gray-50 bg-white/80 backdrop-blur-md shrink-0">
             <div class="flex items-center gap-4">
                 <button id="sidebarToggle" class="flex flex-col gap-1.5 p-1 md:hidden">
