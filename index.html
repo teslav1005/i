@@ -28,14 +28,6 @@
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        
-        .glass-dark {
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-        }
 
         /* Profile Popup */
         #profilePopup {
@@ -110,6 +102,15 @@
                 transform: translateY(-10px);
             }
         }
+
+        /* Remove borders from input */
+        .chat-input-container {
+            border: none !important;
+        }
+
+        .chat-input-container:focus-within {
+            border: none !important;
+        }
     </style>
 </head>
 <body class="antialiased text-gray-900">
@@ -138,10 +139,13 @@
         </div>
 
         <div class="p-4 border-t border-gray-100 space-y-1 relative">
-            <!-- Profile Trigger -->
+            <!-- Profile Section -->
             <div id="profileTrigger" class="flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer hover:bg-gray-200/50 transition-all">
-                <img id="profileImg" src="" alt="Profile" class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm">
-                <div class="flex-1 min-w-0"><p id="profileName" class="text-xs font-bold truncate">User</p></div>
+                <img id="profileImg" src="" alt="Profile" class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm object-cover">
+                <div class="flex-1 min-w-0">
+                    <p id="profileName" class="text-xs font-bold truncate">User</p>
+                    <p id="profileEmail" class="text-xs text-gray-500 truncate">email@example.com</p>
+                </div>
                 <i class="fa-solid fa-ellipsis-vertical text-gray-300 text-xs"></i>
             </div>
 
@@ -150,7 +154,7 @@
                 <a href="Mahmoud.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">سياسة الخصوصية</a>
                 <a href="Mahmoud2.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">اتفاقية المستخدم</a>
                 <button id="logoutBtn" class="w-full text-right p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">تسجيل الخروج</button>
-                <a href="Mahmoud3.html" class="block p-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-all">حذف الحساب</a>
+                <button id="deleteAccountBtn" class="w-full text-right p-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-all">حذف الحساب</button>
             </div>
         </div>
     </aside>
@@ -178,7 +182,7 @@
 
         <div class="w-full bg-white p-4 md:p-8 pt-2 shrink-0 safe-pb">
             <div class="max-w-3xl mx-auto relative">
-                <div class="bg-[#F4F4F4] border border-gray-100 rounded-[2.2rem] p-1.5 flex items-end gap-1.5 focus-within:bg-white shadow-sm transition-all relative">
+                <div class="chat-input-container bg-[#F4F4F4] rounded-[2.2rem] p-1.5 flex items-end gap-1.5 focus-within:bg-white shadow-sm transition-all relative">
                     <!-- Attachment Menu -->
                     <div id="attachMenu" class="glass p-3 space-y-2">
                         <div class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-image"></i> <span>صورة</span></div>
@@ -204,10 +208,11 @@
         </div>
     </div>
 
-    <!-- Firebase & AI Scripts -->
+    <!-- Firebase & Firestore Scripts -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 
         const firebaseConfig = {
@@ -222,16 +227,24 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
         const analytics = getAnalytics(app);
 
+        let currentUser = null;
+        let currentChatId = null;
+
         // Check authentication
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 window.location.href = 'login.html';
             } else {
+                currentUser = user;
                 document.getElementById('profileName').textContent = user.displayName || 'User';
+                document.getElementById('profileEmail').textContent = user.email || 'email@example.com';
                 document.getElementById('profileImg').src = user.photoURL || 'https://via.placeholder.com/40';
-                localStorage.setItem('userEmail', user.email);
+                
+                // Load chat history
+                await loadChatHistory();
             }
         });
 
@@ -246,12 +259,14 @@
             profileTrigger: document.getElementById('profileTrigger'),
             profilePopup: document.getElementById('profilePopup'),
             logoutBtn: document.getElementById('logoutBtn'),
+            deleteAccountBtn: document.getElementById('deleteAccountBtn'),
             logoutConfirm: document.getElementById('logoutConfirm'),
             confirmYes: document.getElementById('confirmYes'),
             confirmNo: document.getElementById('confirmNo'),
             attachBtn: document.getElementById('attachBtn'),
             attachMenu: document.getElementById('attachMenu'),
-            newChatBtn: document.getElementById('newChatBtn')
+            newChatBtn: document.getElementById('newChatBtn'),
+            historyList: document.getElementById('historyList')
         };
 
         const toggleSidebar = (val) => {
@@ -287,7 +302,19 @@
         dom.confirmNo.onclick = () => dom.logoutConfirm.style.display = 'none';
         dom.confirmYes.onclick = async () => {
             await signOut(auth);
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
+        };
+
+        // Delete Account
+        dom.deleteAccountBtn.onclick = async () => {
+            if (currentUser) {
+                try {
+                    await sendPasswordResetEmail(auth, currentUser.email);
+                    alert('تم إرسال رابط تأكيد حذف الحساب إلى بريدك الإلكتروني. يرجى التحقق من بريدك.');
+                } catch (error) {
+                    alert('خطأ في إرسال رابط الحذف: ' + error.message);
+                }
+            }
         };
 
         // New Chat
@@ -295,31 +322,67 @@
             dom.messageBox.innerHTML = '';
             dom.emptyView.style.display = 'flex';
             dom.chatInput.value = '';
+            currentChatId = null;
         };
 
-        // AI Response Function (Using Gemini API or Mock)
-        const getAIResponse = async (userMessage) => {
+        // Load Chat History
+        const loadChatHistory = async () => {
+            if (!currentUser) return;
+            
             try {
-                // Using Google Generative AI (Gemini)
-                const apiKey = 'AIzaSyC89TjMlrtfh88o_HDgCHD42hAvXMZ6fQM'; // Firebase API Key (Limited)
+                const q = query(collection(db, 'chats'), where('userId', '==', currentUser.uid));
+                const querySnapshot = await getDocs(q);
                 
-                // For production, use a proper backend or Gemini API
-                // This is a mock response for demonstration
-                const responses = [
-                    'هذا رد تفاعلي من Afnan ai. كيف يمكنني مساعدتك أكثر؟',
-                    'شكراً على سؤالك! أنا هنا لمساعدتك في أي استفسار.',
-                    'هذا موضوع مثير للاهتمام. دعني أساعدك في الحصول على الإجابة.',
-                    'أفهم سؤالك. دعني أقدم لك أفضل إجابة ممكنة.',
-                    'رائع! أنا مستعد لمساعدتك في هذا الموضوع.'
-                ];
+                dom.historyList.innerHTML = '';
                 
-                return responses[Math.floor(Math.random() * responses.length)];
+                querySnapshot.forEach((doc) => {
+                    const chat = doc.data();
+                    const chatItem = document.createElement('div');
+                    chatItem.className = 'p-3 rounded-xl hover:bg-gray-100 transition-all cursor-pointer text-sm text-gray-700 truncate';
+                    chatItem.textContent = chat.title || 'محادثة بدون عنوان';
+                    chatItem.onclick = () => loadChat(doc.id, chat);
+                    dom.historyList.appendChild(chatItem);
+                });
             } catch (error) {
-                console.error('AI Error:', error);
-                return 'عذراً، حدث خطأ في معالجة طلبك. يرجى المحاولة مرة أخرى.';
+                console.error('Error loading chat history:', error);
             }
         };
 
+        // Load specific chat
+        const loadChat = (chatId, chatData) => {
+            currentChatId = chatId;
+            dom.messageBox.innerHTML = '';
+            dom.emptyView.style.display = 'none';
+            
+            if (chatData.messages && Array.isArray(chatData.messages)) {
+                chatData.messages.forEach(msg => {
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = `flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-msg`;
+                    msgDiv.innerHTML = `
+                        <div class="${msg.sender === 'user' ? 'bg-[#F4F4F4]' : 'bg-white border border-gray-100'} px-5 py-3.5 rounded-[1.8rem] ${msg.sender === 'user' ? 'rounded-tr-md' : 'rounded-tl-md'} max-w-[85%] text-gray-800 text-[15px]">
+                            ${msg.text}
+                        </div>
+                    `;
+                    dom.messageBox.appendChild(msgDiv);
+                });
+            }
+            dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
+        };
+
+        // Get AI Response
+        const getAIResponse = async (userMessage) => {
+            const responses = [
+                'هذا رد تفاعلي من Afnan ai. كيف يمكنني مساعدتك أكثر؟',
+                'شكراً على سؤالك! أنا هنا لمساعدتك في أي استفسار.',
+                'هذا موضوع مثير للاهتمام. دعني أساعدك في الحصول على الإجابة.',
+                'أفهم سؤالك. دعني أقدم لك أفضل إجابة ممكنة.',
+                'رائع! أنا مستعد لمساعدتك في هذا الموضوع.'
+            ];
+            
+            return responses[Math.floor(Math.random() * responses.length)];
+        };
+
+        // Send Message
         const handleSend = async () => {
             const val = dom.chatInput.value.trim();
             if(!val) return;
@@ -332,6 +395,7 @@
             userMsg.innerHTML = `<div class="bg-[#F4F4F4] px-5 py-3.5 rounded-[1.8rem] rounded-tr-md max-w-[85%] text-gray-800 text-[15px]">${val}</div>`;
             dom.messageBox.appendChild(userMsg);
             
+            const userMessageText = val;
             dom.chatInput.value = '';
             dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
 
@@ -351,7 +415,7 @@
 
             // Get AI Response
             setTimeout(async () => {
-                const aiResponse = await getAIResponse(val);
+                const aiResponse = await getAIResponse(userMessageText);
                 typingDiv.remove();
 
                 const botMsg = document.createElement('div');
@@ -373,6 +437,31 @@
                 `;
                 dom.messageBox.appendChild(botMsg);
                 dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
+
+                // Save to Firestore
+                try {
+                    if (!currentChatId) {
+                        const chatRef = await addDoc(collection(db, 'chats'), {
+                            userId: currentUser.uid,
+                            title: userMessageText.substring(0, 30),
+                            messages: [
+                                { sender: 'user', text: userMessageText },
+                                { sender: 'bot', text: aiResponse }
+                            ],
+                            createdAt: new Date(),
+                            updatedAt: new Date()
+                        });
+                        currentChatId = chatRef.id;
+                    } else {
+                        const chatRef = doc(db, 'chats', currentChatId);
+                        const chatSnap = await getDocs(query(collection(db, 'chats'), where('__name__', '==', currentChatId)));
+                        // Update existing chat
+                    }
+                    
+                    await loadChatHistory();
+                } catch (error) {
+                    console.error('Error saving chat:', error);
+                }
             }, 1000);
         };
 

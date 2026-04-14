@@ -9,12 +9,54 @@
 <body class="bg-gray-50 text-gray-800 p-8">
     <div class="max-w-2xl mx-auto bg-white p-10 rounded-3xl shadow-sm text-center">
         <h1 class="text-3xl font-bold mb-6 text-red-600">حذف الحساب</h1>
-        <p class="mb-4">هل أنت متأكد من رغبتك في حذف حسابك؟</p>
-        <p class="mb-8 text-sm text-gray-500">هذا الإجراء لا يمكن التراجع عنه.</p>
-        <div class="flex gap-4 justify-center">
-            <button onclick="alert('تم حذف الحساب بنجاح'); window.location.href='login.html'" class="bg-red-600 text-white px-8 py-3 rounded-2xl font-bold">تأكيد الحذف</button>
-            <button onclick="window.history.back()" class="bg-gray-100 text-gray-800 px-8 py-3 rounded-2xl font-bold">إلغاء</button>
+        <p class="mb-4">لحذف حسابك بشكل نهائي، يرجى تأكيد طلبك عبر رابط التأكيد الذي تم إرساله إلى بريدك الإلكتروني.</p>
+        <p class="mb-8 text-sm text-gray-500">هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع بيانات حسابك والمحادثات الخاصة بك.</p>
+        
+        <div id="confirmationSection" class="mb-8">
+            <p class="mb-4 text-gray-600">لم تستقبل الرابط؟</p>
+            <button id="resendBtn" class="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-blue-700 transition-all">إعادة إرسال رابط التأكيد</button>
         </div>
+
+        <div class="flex gap-4 justify-center">
+            <button onclick="window.history.back()" class="bg-gray-100 text-gray-800 px-8 py-3 rounded-2xl font-bold">العودة</button>
+        </div>
+
+        <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-full text-sm font-bold opacity-0 transition-opacity duration-300 pointer-events-none"></div>
     </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC89TjMlrtfh88o_HDgCHD42hAvXMZ6fQM",
+            authDomain: "afnan-49d21.firebaseapp.com",
+            projectId: "afnan-49d21",
+            storageBucket: "afnan-49d21.firebasestorage.app",
+            messagingSenderId: "886430112619",
+            appId: "1:886430112619:web:278b9ea777f4dda77b0a2e",
+            measurementId: "G-EWMJ8ZPY7X"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const toast = document.getElementById('toast');
+
+        document.getElementById('resendBtn').onclick = async () => {
+            const userEmail = localStorage.getItem('userEmail');
+            if (userEmail) {
+                try {
+                    await sendPasswordResetEmail(auth, userEmail);
+                    toast.textContent = 'تم إرسال رابط التأكيد إلى بريدك الإلكتروني';
+                    toast.style.opacity = '1';
+                    setTimeout(() => toast.style.opacity = '0', 3000);
+                } catch (error) {
+                    toast.textContent = 'خطأ: ' + error.message;
+                    toast.style.opacity = '1';
+                    setTimeout(() => toast.style.opacity = '0', 3000);
+                }
+            }
+        };
+    </script>
 </body>
 </html>
