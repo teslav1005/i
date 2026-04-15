@@ -1,0 +1,16 @@
+{
+    "firebase": {
+        "apiKey": "AIzaSyC89TjMlrtfh88o_HDgCHD42hAvXMZ6fQM",
+        "authDomain": "afnan-49d21.firebaseapp.com",
+        "projectId": "afnan-49d21",
+        "storageBucket": "afnan-49d21.firebasestorage.app",
+        "messagingSenderId": "886430112619",
+        "appId": "1:886430112619:web:278b9ea777f4dda77b0a2e",
+        "measurementId": "G-EWMJ8ZPY7X"
+    },
+    "app": {
+        "name": "Afnan ai",
+        "version": "1.0.0",
+        "domain": "afnanai.com"
+    }
+}

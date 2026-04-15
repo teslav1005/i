@@ -96,32 +96,16 @@
 
     <!-- Firebase Scripts -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+        import { auth } from './api.js';
+        import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyC89TjMlrtfh88o_HDgCHD42hAvXMZ6fQM",
-            authDomain: "afnan-49d21.firebaseapp.com",
-            projectId: "afnan-49d21",
-            storageBucket: "afnan-49d21.firebasestorage.app",
-            messagingSenderId: "886430112619",
-            appId: "1:886430112619:web:278b9ea777f4dda77b0a2e",
-            measurementId: "G-EWMJ8ZPY7X"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const analytics = getAnalytics(app);
         const googleProvider = new GoogleAuthProvider();
-
         const btn = document.getElementById('googleLogin');
         const toast = document.getElementById('toast');
 
-        // Check if user is already logged in
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                navigateToPage('index.html');
+                window.navigateToPage('index.html');
             }
         });
 
@@ -131,12 +115,8 @@
             btn.innerHTML = '<div class="loader"></div>';
 
             try {
-                const result = await signInWithPopup(auth, googleProvider);
-                const user = result.user;
-                localStorage.setItem('userEmail', user.email);
-                localStorage.setItem('userName', user.displayName);
-                localStorage.setItem('userPhoto', user.photoURL);
-                navigateToPage('index.html');
+                await signInWithPopup(auth, googleProvider);
+                window.navigateToPage('index.html');
             } catch (err) {
                 console.error(err);
                 btn.innerHTML = originalText;
@@ -147,7 +127,6 @@
             }
         };
 
-        // GitHub Placeholder
         document.getElementById('githubLogin').onclick = () => {
             toast.textContent = "GitHub login coming soon";
             toast.style.opacity = '1';
