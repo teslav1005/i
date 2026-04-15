@@ -246,7 +246,6 @@
 
     <div id="overlay" class="fixed inset-0 bg-black/20 backdrop-blur-[2px] hidden transition-opacity duration-300 opacity-0"></div>
 
-    <!-- Sidebar -->
     <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-72 bg-[#fcfcfc] border-r border-gray-100 flex flex-col transform -translate-x-full md:translate-x-0 sidebar-transition h-full shadow-lg md:shadow-none">
         <div class="p-4 flex flex-col gap-4">
             <button id="newChatBtn" class="flex items-center gap-3 w-full bg-white border border-gray-200 p-3.5 rounded-2xl hover:bg-gray-50 transition-all shadow-sm">
@@ -256,8 +255,7 @@
         </div>
         
         <div class="flex-1 overflow-y-auto px-4 space-y-2 hide-scrollbar" id="historyList">
-            <!-- Chat History -->
-        </div>
+            </div>
 
         <div class="p-4 border-t border-gray-100 space-y-1">
             <a href="https://service.afnanai.com" target="_blank" class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 transition-all text-gray-600">
@@ -273,7 +271,6 @@
         <div class="p-4 border-t border-gray-100 space-y-1 relative" id="profileSection"></div>
     </aside>
 
-    <!-- Main Content -->
     <main class="flex-1 flex flex-col min-w-0 h-full relative">
         <header class="h-[var(--header-h)] flex items-center justify-between px-6 border-b border-gray-50 bg-white/80 backdrop-blur-md shrink-0">
             <div class="flex items-center gap-4">
@@ -283,7 +280,7 @@
                 </button>
             </div>
             <div id="authButtons">
-                <button id="loginBtnHeader" class="bg-black text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-gray-800 transition-all">تسجيل الدخول</button>
+                <button id="loginBtnHeader" onclick="navigateToPage('login.html')" class="bg-black text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-gray-800 transition-all">تسجيل الدخول</button>
             </div>
         </header>
 
@@ -298,27 +295,32 @@
         <div class="w-full bg-white p-4 md:p-8 pt-2 shrink-0 safe-pb">
             <div class="max-w-3xl mx-auto relative">
                 <div class="chat-input-container bg-[#F4F4F4] rounded-[2.2rem] flex flex-col shadow-sm transition-all relative overflow-hidden">
-                    <!-- Attachment Preview Area -->
                     <div id="attachmentPreview"></div>
 
                     <div class="flex items-end gap-1.5 p-1.5 focus-within:bg-white">
                         <div id="attachMenu" class="glass p-3 space-y-2">
-                            <div id="pickImage" class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-image"></i> <span>صورة</span></div>
-                            <div id="pickFile" class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-file"></i> <span>ملف</span></div>
+                            <div id="pickImage" class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-image text-gray-500"></i> <span class="text-sm font-medium">صورة</span></div>
+                            <div id="pickFile" class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-file text-gray-500"></i> <span class="text-sm font-medium">ملف</span></div>
+                            <div id="pickBanana" class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><span class="text-xl">🍌</span> <span class="text-sm font-medium text-yellow-600">توليد صور</span></div>
                         </div>
                         
-                        <button id="attachBtn" class="w-12 h-12 flex items-center justify-center rounded-full text-gray-400"><i class="fa-solid fa-plus text-xl"></i></button>
+                        <button id="attachBtn" class="w-12 h-12 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 transition-colors"><i class="fa-solid fa-plus text-xl"></i></button>
+                        
+                        <div id="activeBananaBtn" style="display: none;" class="relative w-12 h-12 flex items-center justify-center rounded-full bg-yellow-100 text-2xl cursor-pointer">
+                            🍌
+                            <span id="removeBananaBtn" class="absolute top-0 right-0 bg-gray-800 hover:bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] cursor-pointer transition-colors">&times;</span>
+                        </div>
+
                         <input type="file" id="imageInput" accept="image/*" class="hidden">
                         <input type="file" id="fileInput" class="hidden">
                         <textarea id="chatInput" rows="1" placeholder="اسأل Afnan ai..." class="flex-1 bg-transparent border-none focus:ring-0 py-3 px-2 text-[16px] resize-none max-h-40 hide-scrollbar" dir="auto"></textarea>
-                        <button id="sendBtn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center disabled:opacity-50"><i class="fa-solid fa-arrow-up"></i></button>
+                        <button id="sendBtn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center disabled:opacity-50 hover:bg-gray-800 transition-colors"><i class="fa-solid fa-arrow-up"></i></button>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Logout Confirmation Modal -->
     <div id="logoutConfirm" class="flex">
         <div class="glass p-8 rounded-3xl text-center max-w-xs w-full mx-4 shadow-2xl">
             <h3 class="text-xl font-bold mb-6">هل أنت متأكد من تسجيل الخروج؟</h3>
@@ -333,6 +335,11 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, where, getDocs, doc, setDoc, updateDoc, orderBy, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // دالة التنقل العامة لتعمل مع HTML مباشرة
+        window.navigateToPage = (url) => { window.location.href = url; };
+        // متغير عالمي لمعرفة هل نحن في وضع توليد الصور أم لا
+        window.isBananaMode = false;
 
         const firebaseConfig = {
             apiKey: "AIzaSyC89TjMlrtfh88o_HDgCHD42hAvXMZ6fQM",
@@ -367,7 +374,10 @@
             attachMenu: document.getElementById('attachMenu'),
             newChatBtn: document.getElementById('newChatBtn'),
             historyList: document.getElementById('historyList'),
-            attachmentPreview: document.getElementById('attachmentPreview')
+            attachmentPreview: document.getElementById('attachmentPreview'),
+            activeBananaBtn: document.getElementById('activeBananaBtn'),
+            removeBananaBtn: document.getElementById('removeBananaBtn'),
+            pickBanana: document.getElementById('pickBanana')
         };
 
         onAuthStateChanged(auth, async (user) => {
@@ -424,6 +434,25 @@
         dom.attachBtn.onclick = (e) => {
             e.stopPropagation();
             dom.attachMenu.style.display = dom.attachMenu.style.display === 'block' ? 'none' : 'block';
+        };
+
+        // تفعيل نظام توليد الصور
+        dom.pickBanana.onclick = (e) => {
+            e.stopPropagation();
+            window.isBananaMode = true;
+            dom.attachBtn.style.display = 'none';
+            dom.activeBananaBtn.style.display = 'flex';
+            dom.attachMenu.style.display = 'none';
+            dom.chatInput.placeholder = "صف الصورة التي تريد توليدها بالذكاء الاصطناعي...";
+        };
+
+        // إلغاء تفعيل نظام توليد الصور
+        dom.removeBananaBtn.onclick = (e) => {
+            e.stopPropagation();
+            window.isBananaMode = false;
+            dom.activeBananaBtn.style.display = 'none';
+            dom.attachBtn.style.display = 'flex';
+            dom.chatInput.placeholder = "اسأل Afnan ai...";
         };
 
         const imageInput = document.getElementById('imageInput');
@@ -502,9 +531,9 @@
                             <p class="truncate font-medium">${preview}</p>
                         </div>
                         <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                            <i class="fa-solid fa-thumbtack text-[10px] ${chat.isPinned ? 'text-black opacity-100' : 'text-gray-300'}" onclick="event.stopPropagation(); togglePin('${chatId}', ${chat.isPinned})"></i>
-                            <i class="fa-solid fa-pen text-[10px] text-gray-300 hover:text-blue-500" onclick="event.stopPropagation(); editChatTitle('${chatId}', '${preview.replace(/'/g, "\\'")}')"></i>
-                            <i class="fa-solid fa-trash text-[10px] text-gray-300 hover:text-red-500" onclick="event.stopPropagation(); deleteChat('${chatId}')"></i>
+                            <i class="fa-solid fa-thumbtack text-[14px] ${chat.isPinned ? 'text-black opacity-100' : 'text-gray-400 hover:text-black'}" onclick="event.stopPropagation(); togglePin('${chatId}', ${chat.isPinned})"></i>
+                            <i class="fa-solid fa-pen text-[12px] text-gray-400 hover:text-blue-500" onclick="event.stopPropagation(); editChatTitle('${chatId}', '${preview.replace(/'/g, "\\'")}')"></i>
+                            <i class="fa-solid fa-trash text-[12px] text-gray-400 hover:text-red-500" onclick="event.stopPropagation(); deleteChat('${chatId}')"></i>
                         </div>
                     `;
                     dom.historyList.appendChild(item);
@@ -527,6 +556,10 @@
                         if (msg.attachment) {
                             if (msg.attachment.type === 'image') content = `<img src="${msg.attachment.data}" class="image-preview"><p class="mt-2">${msg.text}</p>`;
                             else content = `<div class="flex items-center gap-2"><i class="fa-solid fa-file"></i> ${msg.attachment.name}</div><p class="mt-2">${msg.text}</p>`;
+                        }
+                        // إضافة تنسيق مميز إذا كانت الرسالة طلب صورة
+                        if(msg.isImageGenRequest) {
+                            content = `🍌 <span class="text-yellow-600 font-bold ml-1">طلب صورة:</span> ` + content;
                         }
                         div.innerHTML = `<div class="${msg.sender === 'user' ? 'bg-[#F4F4F4]' : 'bg-white border border-gray-100'} px-5 py-3.5 rounded-[1.8rem] ${msg.sender === 'user' ? 'rounded-tr-md' : 'rounded-tl-md'} max-w-[85%] text-gray-800 text-[15px]">${content}</div>`;
                         dom.messageBox.appendChild(div);
@@ -557,15 +590,24 @@
             const userDiv = document.createElement('div');
             userDiv.className = 'flex justify-end animate-msg';
             let userContent = val;
+            
             if (pendingAttachment) {
                 if (pendingAttachment.type === 'image') userContent = `<img src="${pendingAttachment.data}" class="image-preview"><p class="mt-2">${val}</p>`;
                 else userContent = `<div class="flex items-center gap-2"><i class="fa-solid fa-file"></i> ${pendingAttachment.name}</div><p class="mt-2">${val}</p>`;
             }
+            
+            // تمييز الرسالة إذا كانت بوضع الصور 🍌
+            if (window.isBananaMode) {
+                userContent = `🍌 <span class="text-yellow-600 font-bold ml-1">طلب صورة:</span> ` + userContent;
+            }
+
             userDiv.innerHTML = `<div class="bg-[#F4F4F4] px-5 py-3.5 rounded-[1.8rem] rounded-tr-md max-w-[85%] text-gray-800 text-[15px]">${userContent}</div>`;
             dom.messageBox.appendChild(userDiv);
             
             const currentText = val;
             const currentAttach = pendingAttachment;
+            const wasImageGen = window.isBananaMode;
+            
             dom.chatInput.value = '';
             removeAttachment();
             dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
@@ -577,7 +619,7 @@
             dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
 
             setTimeout(async () => {
-                const aiRes = "هذا رد تجريبي من Afnan ai.";
+                const aiRes = wasImageGen ? "سيتم تصميم الصورة المطلوبة في أسرع وقت." : "هذا رد تجريبي من Afnan ai.";
                 typing.remove();
                 const botDiv = document.createElement('div');
                 botDiv.className = 'flex items-start gap-3 animate-msg';
@@ -586,7 +628,7 @@
                 dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
 
                 try {
-                    const msgUser = { sender: 'user', text: currentText, attachment: currentAttach, timestamp: new Date() };
+                    const msgUser = { sender: 'user', text: currentText, attachment: currentAttach, isImageGenRequest: wasImageGen, timestamp: new Date() };
                     const msgBot = { sender: 'bot', text: aiRes, timestamp: new Date() };
                     if (!currentChatId) {
                         const ref = await addDoc(collection(db, 'chats'), { userId: currentUser.uid, title: currentText.split(' ').slice(0, 3).join(' '), messages: [msgUser, msgBot], createdAt: new Date(), updatedAt: new Date(), isPinned: false });
