@@ -55,8 +55,10 @@
                     <span class="w-4 h-0.5 bg-gray-600 rounded-full"></span>
                 </button>
             </div>
-            <div id="authButtons">
-                <button id="loginBtnHeader" onclick="window.navigateToPage('login.html')" class="bg-black text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-gray-800 transition-all">تسجيل الدخول</button>
+            <div class="flex items-center gap-4">
+                <div id="authButtons">
+                    <button id="loginBtnHeader" onclick="window.navigateToPage('login.html')" class="bg-black text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-gray-800 transition-all">تسجيل الدخول</button>
+                </div>
             </div>
         </header>
 
@@ -70,9 +72,9 @@
 
         <div class="w-full bg-white p-4 md:p-8 pt-2 shrink-0 safe-pb">
             <div class="max-w-3xl mx-auto relative">
-                <div class="chat-input-container bg-[#F4F4F4] rounded-[2.2rem] flex flex-col shadow-sm transition-all relative overflow-hidden">
+                <div class="chat-input-container bg-[#F4F4F4] rounded-[2.2rem] flex flex-col shadow-sm transition-all relative overflow-visible">
                     <div id="attachmentPreview"></div>
-                    <div class="flex items-end gap-1.5 p-1.5 focus-within:bg-white">
+                    <div class="flex items-end gap-1.5 p-1.5 focus-within:bg-white rounded-[2.2rem]">
                         <div id="attachMenu" class="glass p-3 space-y-2">
                             <div id="pickImage" class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-image"></i> <span>صورة</span></div>
                             <div id="pickFile" class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-file"></i> <span>ملف</span></div>
@@ -81,7 +83,10 @@
                         <input type="file" id="imageInput" accept="image/*" class="hidden">
                         <input type="file" id="fileInput" class="hidden">
                         <textarea id="chatInput" rows="1" placeholder="اسأل Afnan ai..." class="flex-1 bg-transparent border-none focus:ring-0 py-3 px-2 text-[16px] resize-none max-h-40 hide-scrollbar" dir="auto"></textarea>
-                        <button id="sendBtn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center disabled:opacity-50"><i class="fa-solid fa-arrow-up"></i></button>
+                        <div class="flex items-center gap-2 mb-1 mr-1">
+                            <i class="fa-brands fa-github text-xl text-gray-400 cursor-pointer hover:text-black"></i>
+                            <button id="sendBtn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center disabled:opacity-50"><i class="fa-solid fa-arrow-up"></i></button>
+                        </div>
                     </div>
                 </div>
             </div>

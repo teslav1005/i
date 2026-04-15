@@ -179,20 +179,49 @@ window.loadChat = async (chatId) => {
         if (!snap.empty) {
             const chat = snap.docs[0].data();
             chat.messages.forEach(msg => {
-                const div = document.createElement('div');
-                div.className = `flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-msg`;
-                let content = msg.text;
-                if (msg.attachment) {
-                    if (msg.attachment.type === 'image') content = `<img src="${msg.attachment.data}" class="image-preview"><p class="mt-2">${msg.text}</p>`;
-                    else content = `<div class="flex items-center gap-2"><i class="fa-solid fa-file"></i> ${msg.attachment.name}</div><p class="mt-2">${msg.text}</p>`;
-                }
-                div.innerHTML = `<div class="${msg.sender === 'user' ? 'bg-[#F4F4F4]' : 'bg-white border border-gray-100'} px-5 py-3.5 rounded-[1.8rem] ${msg.sender === 'user' ? 'rounded-tr-md' : 'rounded-tl-md'} max-w-[85%] text-gray-800 text-[15px]">${content}</div>`;
-                dom.messageBox.appendChild(div);
+                appendMessage(msg.sender, msg.text, msg.attachment);
             });
         }
     } catch (e) { console.error(e); }
     dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
     if(window.innerWidth < 768) toggleSidebar(false);
+};
+
+const appendMessage = (sender, text, attachment) => {
+    const div = document.createElement('div');
+    div.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} animate-msg mb-6`;
+    
+    let content = text;
+    if (attachment) {
+        if (attachment.type === 'image') content = `<img src="${attachment.data}" class="image-preview"><p class="mt-2">${text}</p>`;
+        else content = `<div class="flex items-center gap-2"><i class="fa-solid fa-file"></i> ${attachment.name}</div><p class="mt-2">${text}</p>`;
+    }
+
+    if (sender === 'user') {
+        div.innerHTML = `<div class="bg-[#F4F4F4] px-5 py-3.5 rounded-[1.8rem] rounded-tr-md max-w-[85%] text-gray-800 text-[15px]">${content}</div>`;
+    } else {
+        div.innerHTML = `
+            <div class="flex items-start gap-3 max-w-[85%]">
+                <img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" class="w-6 h-6 mt-1 shrink-0">
+                <div>
+                    <div class="bg-white border border-gray-100 px-5 py-3.5 rounded-[1.8rem] rounded-tl-md text-gray-800 text-[15px]">${content}</div>
+                    <div class="msg-actions">
+                        <div class="action-btn" onclick="window.copyToClipboard('${text.replace(/'/g, "\\'")}')"><i class="fa-regular fa-copy"></i></div>
+                        <div class="action-btn" onclick="window.toast('تم الإعجاب')"><i class="fa-regular fa-thumbs-up"></i></div>
+                        <div class="action-btn" onclick="window.toast('لم يعجبني')"><i class="fa-regular fa-thumbs-down"></i></div>
+                        <div class="action-btn" onclick="window.handleSend()"><i class="fa-solid fa-rotate-right"></i></div>
+                        <div class="action-btn" onclick="window.toast('جاري المشاركة...')"><i class="fa-regular fa-share-from-square"></i></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    dom.messageBox.appendChild(div);
+    dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
+};
+
+window.copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => window.toast('تم النسخ إلى الحافظة'));
 };
 
 window.editChatTitle = async (chatId, current) => {
@@ -207,30 +236,21 @@ window.deleteChat = async (chatId) => {
 window.togglePin = async (chatId, status) => { await updateDoc(doc(db, 'chats', chatId), { isPinned: !status, updatedAt: new Date() }); await loadChatHistory(); };
 
 // Send Message
-const handleSend = async () => {
+window.handleSend = async () => {
     const val = dom.chatInput.value.trim();
     if (!val && !pendingAttachment) return;
     if (!currentUser) { window.navigateToPage('login.html'); return; }
 
     dom.emptyView.style.display = 'none';
-    const userDiv = document.createElement('div');
-    userDiv.className = 'flex justify-end animate-msg';
-    let userContent = val;
-    if (pendingAttachment) {
-        if (pendingAttachment.type === 'image') userContent = `<img src="${pendingAttachment.data}" class="image-preview"><p class="mt-2">${val}</p>`;
-        else userContent = `<div class="flex items-center gap-2"><i class="fa-solid fa-file"></i> ${pendingAttachment.name}</div><p class="mt-2">${val}</p>`;
-    }
-    userDiv.innerHTML = `<div class="bg-[#F4F4F4] px-5 py-3.5 rounded-[1.8rem] rounded-tr-md max-w-[85%] text-gray-800 text-[15px]">${userContent}</div>`;
-    dom.messageBox.appendChild(userDiv);
+    appendMessage('user', val, pendingAttachment);
     
     const currentText = val;
     const currentAttach = pendingAttachment;
     dom.chatInput.value = '';
     window.removeAttachment();
-    dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
 
     const typing = document.createElement('div');
-    typing.className = 'flex items-start gap-3 animate-msg';
+    typing.className = 'flex items-start gap-3 animate-msg mb-6';
     typing.innerHTML = `<img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" class="w-6 h-6 mt-1"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
     dom.messageBox.appendChild(typing);
     dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
@@ -238,11 +258,7 @@ const handleSend = async () => {
     setTimeout(async () => {
         const aiRes = "هذا رد تجريبي من Afnan ai.";
         typing.remove();
-        const botDiv = document.createElement('div');
-        botDiv.className = 'flex items-start gap-3 animate-msg';
-        botDiv.innerHTML = `<img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" class="w-6 h-6 mt-1"><div class="bg-white border border-gray-100 px-5 py-3.5 rounded-[1.8rem] rounded-tl-md max-w-[85%] text-gray-800 text-[15px]">${aiRes}</div>`;
-        dom.messageBox.appendChild(botDiv);
-        dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
+        appendMessage('bot', aiRes);
 
         try {
             const msgUser = { sender: 'user', text: currentText, attachment: currentAttach, timestamp: new Date() };
@@ -258,8 +274,8 @@ const handleSend = async () => {
     }, 1000);
 };
 
-dom.sendBtn.onclick = handleSend;
-dom.chatInput.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } };
+dom.sendBtn.onclick = window.handleSend;
+dom.chatInput.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.handleSend(); } };
 
 window.toast = (msg) => {
     const t = document.createElement('div');
