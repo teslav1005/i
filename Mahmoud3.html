@@ -47,6 +47,7 @@
             animation: slideIn 0.3s ease-out;
         }
     </style>
+    <script src="security.js"></script>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
     <div class="glass p-8 rounded-3xl text-center max-w-md w-full shadow-2xl animate-in">
@@ -154,7 +155,7 @@
             try {
                 const user = auth.currentUser;
                 if (!user) {
-                    window.location.href = 'login.html';
+                    navigateToPage('login.html');
                     return;
                 }
 
@@ -173,7 +174,7 @@
                 if (response.ok) {
                     showToast('تم حذف الحساب بنجاح', 'success');
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        navigateToPage('index.html');
                     }, 2000);
                 } else {
                     showToast(data.error || 'خطأ في التحقق من الرمز', 'error');
@@ -193,7 +194,7 @@
             try {
                 const user = auth.currentUser;
                 if (!user) {
-                    window.location.href = 'login.html';
+                    navigateToPage('login.html');
                     return;
                 }
 

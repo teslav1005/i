@@ -420,8 +420,8 @@
                     </div>
 
                     <div id="profilePopup" class="glass p-2 space-y-1">
-                        <a href="Mahmoud.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">سياسة الخصوصية</a>
-                        <a href="Mahmoud2.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">اتفاقية المستخدم</a>
+                        <a href="javascript:navigateToPage('Mahmoud.html')" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">سياسة الخصوصية</a>
+                        <a href="javascript:navigateToPage('Mahmoud2.html')" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">اتفاقية المستخدم</a>
                         <button id="logoutBtn" class="w-full text-right p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">تسجيل الخروج</button>
                         <button id="deleteAccountBtn" class="w-full text-right p-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-all">حذف الحساب</button>
                     </div>
@@ -477,7 +477,7 @@
 
                             if (response.ok) {
                                 localStorage.setItem('deleteRequestEmail', currentUser.email);
-                                window.location.href = 'Mahmoud3.html';
+                                navigateToPage('Mahmoud3.html');
                             } else {
                                 alert('خطأ في إرسال رمز التحقق. حاول مرة أخرى.');
                             }
@@ -492,7 +492,7 @@
 
         document.addEventListener('click', (e) => {
             if (e.target && e.target.id === 'loginBtnHeader') {
-                window.location.href = 'login.html';
+                navigateToPage('login.html');
             }
         });
 
@@ -579,7 +579,7 @@
         dom.confirmNo.onclick = () => dom.logoutConfirm.style.display = 'none';
         dom.confirmYes.onclick = async () => {
             await signOut(auth);
-            window.location.href = 'index.html';
+            navigateToPage('index.html');
         };
 
         // New Chat
@@ -597,24 +597,66 @@
             if (!currentUser) return;
             
             try {
-                const q = query(collection(db, 'chats'), where('userId', '==', currentUser.uid), orderBy('updatedAt', 'desc'));
+                // فرز المحادثات: المثبتة أولاً، ثم حسب تاريخ التحديث
+                const q = query(collection(db, 'chats'), where('userId', '==', currentUser.uid), orderBy('isPinned', 'desc'), orderBy('updatedAt', 'desc'));
                 const querySnapshot = await getDocs(q);
                 
                 dom.historyList.innerHTML = '';
                 
-                querySnapshot.forEach((doc) => {
-                    const chat = doc.data();
+                querySnapshot.forEach((docSnap) => {
+                    const chat = docSnap.data();
+                    const chatId = docSnap.id;
                     const chatItem = document.createElement('div');
                     chatItem.className = `group flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 transition-all cursor-pointer text-sm text-gray-700 ${chat.isPinned ? 'bg-gray-50 border-r-4 border-black' : ''}`;
                     
+                    // الحصول على أول 3 كلمات من أول رسالة
+                    let previewText = chat.title || 'محادثة جديدة';
+                    if (chat.messages && chat.messages.length > 0) {
+                        const firstMsg = chat.messages[0].text || "";
+                        previewText = firstMsg.split(' ').slice(0, 3).join(' ') + (firstMsg.split(' ').length > 3 ? '...' : '');
+                    }
+
                     chatItem.innerHTML = `
-                        <span class="truncate flex-1" onclick="loadChat('${doc.id}', ${JSON.stringify(chat).replace(/"/g, '&quot;')})">${chat.title || 'محادثة بدون عنوان'}</span>
-                        <i class="fa-solid fa-thumbtack text-[10px] ${chat.isPinned ? 'text-black' : 'text-gray-300 opacity-0 group-hover:opacity-100'} transition-all ml-2" onclick="event.stopPropagation(); togglePin('${doc.id}', ${chat.isPinned})"></i>
+                        <div class="flex-1 min-w-0" onclick="loadChat('${chatId}', ${JSON.stringify(chat).replace(/"/g, '&quot;')})">
+                            <p class="truncate font-medium">${previewText}</p>
+                        </div>
+                        <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                            <i class="fa-solid fa-thumbtack text-[10px] ${chat.isPinned ? 'text-black opacity-100' : 'text-gray-300'}" onclick="event.stopPropagation(); togglePin('${chatId}', ${chat.isPinned})"></i>
+                            <i class="fa-solid fa-pen text-[10px] text-gray-300 hover:text-blue-500" onclick="event.stopPropagation(); editChatTitle('${chatId}', '${previewText.replace(/'/g, "\\'")}')"></i>
+                            <i class="fa-solid fa-trash text-[10px] text-gray-300 hover:text-red-500" onclick="event.stopPropagation(); deleteChat('${chatId}')"></i>
+                        </div>
                     `;
                     dom.historyList.appendChild(chatItem);
                 });
             } catch (error) {
                 console.error('Error loading chat history:', error);
+            }
+        };
+
+        // Edit Chat Title
+        window.editChatTitle = async (chatId, currentTitle) => {
+            const newTitle = prompt("أدخل الاسم الجديد للمحادثة:", currentTitle);
+            if (newTitle && newTitle.trim() !== "") {
+                try {
+                    await updateDoc(doc(db, 'chats', chatId), { title: newTitle.trim(), updatedAt: new Date() });
+                    await loadChatHistory();
+                } catch (e) { console.error(e); }
+            }
+        };
+
+        // Delete Chat
+        window.deleteChat = async (chatId) => {
+            if (confirm("هل أنت متأكد من حذف هذه المحادثة؟")) {
+                try {
+                    // في Firestore لا يوجد حذف مباشر لمستند بسهولة إذا كان يحتوي على حقول معقدة، لكن سنستخدم deleteDoc
+                    const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                    await deleteDoc(doc(db, 'chats', chatId));
+                    if (currentChatId === chatId) {
+                        dom.newChatBtn.click();
+                    }
+                    await loadChatHistory();
+                    toast("تم حذف المحادثة");
+                } catch (e) { console.error(e); }
             }
         };
 
@@ -754,7 +796,7 @@
                         if (!currentChatId) {
                             const chatRef = await addDoc(collection(db, 'chats'), {
                                 userId: currentUser.uid,
-                                title: userMessageText.substring(0, 30),
+                                title: userMessageText.split(' ').slice(0, 3).join(' '),
                                 messages: [
                                     { sender: 'user', text: userMessageText, timestamp: new Date() },
                                     { sender: 'bot', text: aiResponse, timestamp: new Date() }
@@ -766,17 +808,15 @@
                             currentChatId = chatRef.id;
                         } else {
                             const chatRef = doc(db, 'chats', currentChatId);
-                            const chatSnap = await getDocs(query(collection(db, 'chats'), where('__name__', '==', currentChatId)));
-                            if (!chatSnap.empty) {
-                                const existingMessages = chatSnap.docs[0].data().messages || [];
-                                await updateDoc(chatRef, {
-                                    messages: [...existingMessages, 
-                                        { sender: 'user', text: userMessageText, timestamp: new Date() },
-                                        { sender: 'bot', text: aiResponse, timestamp: new Date() }
-                                    ],
-                                    updatedAt: new Date()
-                                });
-                            }
+                            // استخدام arrayUnion لتجنب قراءة الرسائل القديمة في كل مرة
+                            const { arrayUnion } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                            await updateDoc(chatRef, {
+                                messages: arrayUnion(
+                                    { sender: 'user', text: userMessageText, timestamp: new Date() },
+                                    { sender: 'bot', text: aiResponse, timestamp: new Date() }
+                                ),
+                                updatedAt: new Date()
+                            });
                         }
                         await loadChatHistory();
                     }
