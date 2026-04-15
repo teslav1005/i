@@ -12,6 +12,7 @@
             color: #000000;
             font-family: system-ui, -apple-system, sans-serif;
             overflow: hidden;
+            transition: all 0.3s ease;
         }
         .btn-social {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -46,9 +47,8 @@
 </head>
 <body class="flex flex-col items-center justify-between min-h-screen p-8 pb-12">
 
-    <!-- Header -->
     <div class="w-full flex justify-between items-center">
-        <div class="bg-[#f0f0f0] px-4 py-1.5 rounded-lg text-xs font-bold text-gray-600 cursor-pointer hover:bg-[#e0e0e0]">
+        <div id="langToggle" class="bg-[#f0f0f0] px-4 py-1.5 rounded-lg text-xs font-bold text-gray-600 cursor-pointer hover:bg-[#e0e0e0] select-none">
             EN
         </div>
         <div class="w-10 h-10 flex items-center justify-center">
@@ -56,20 +56,17 @@
         </div>
     </div>
 
-    <!-- Hero Content -->
     <div class="flex-1 flex flex-col items-center justify-center text-center space-y-4 w-full max-w-sm">
-        <h1 class="text-4xl font-bold tracking-tight">Welcome to Afnan ai</h1>
-        <p class="text-gray-500 text-lg">ابدأ رحلتك الإبداعية الآن</p>
+        <h1 id="mainTitle" class="text-4xl font-bold tracking-tight">مرحباً بك في Afnan ai</h1>
+        <p id="subTitle" class="text-gray-500 text-lg">ابدأ رحلتك الإبداعية الآن</p>
     </div>
 
-    <!-- Auth Buttons -->
     <div class="w-full max-w-sm space-y-10">
         <div class="text-center">
-            <span class="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold">LOGIN TO CONTINUE</span>
+            <span id="loginHint" class="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold">قم بتسجيل الدخول للمتابعة</span>
         </div>
 
         <div class="space-y-3">
-            <!-- Google -->
             <button id="googleLogin" class="btn-social w-full bg-black text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-900 shadow-xl shadow-black/5">
                 <svg class="w-5 h-5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -77,27 +74,64 @@
                     <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                 </svg>
-                <span>Google Log in</span>
+                <span id="googleText">تسجيل الدخول بجوجل</span>
             </button>
 
-            <!-- GitHub -->
             <button id="githubLogin" class="btn-social w-full bg-[#f8f8f8] text-gray-800 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 border border-gray-200 hover:bg-[#f0f0f0]">
                 <i class="fa-brands fa-github text-xl"></i>
-                <span>GitHub Login</span>
+                <span id="githubText">تسجيل الدخول بـ GitHub</span>
             </button>
         </div>
     </div>
 
-    <!-- Error Toast -->
-    <div id="toast" class="fixed bottom-10 bg-red-600 text-white px-6 py-3 rounded-full text-sm font-bold opacity-0 transition-opacity duration-300 pointer-events-none"></div>
+    <div id="toast" class="fixed bottom-10 bg-red-600 text-white px-6 py-3 rounded-full text-sm font-bold opacity-0 transition-opacity duration-300 pointer-events-none z-50"></div>
 
-    <!-- iPhone Bottom Indicator -->
     <div class="w-32 h-1.5 bg-[#f0f0f0] rounded-full mt-8"></div>
 
-    <!-- Firebase Scripts -->
+    <script>
+        const translations = {
+            ar: {
+                title: "مرحباً بك في Afnan ai",
+                subtitle: "ابدأ رحلتك الإبداعية الآن",
+                loginHint: "قم بتسجيل الدخول للمتابعة",
+                googleBtn: "تسجيل الدخول بجوجل",
+                githubBtn: "تسجيل الدخول بـ GitHub",
+                toggleText: "EN",
+                dir: "rtl"
+            },
+            en: {
+                title: "Welcome to Afnan ai",
+                subtitle: "Start your creative journey now",
+                loginHint: "LOGIN TO CONTINUE",
+                googleBtn: "Google Log in",
+                githubBtn: "GitHub Login",
+                toggleText: "AR",
+                dir: "ltr"
+            }
+        };
+
+        let currentLang = 'ar'; // اللغة الافتراضية
+        const langToggleBtn = document.getElementById('langToggle');
+
+        langToggleBtn.addEventListener('click', () => {
+            currentLang = currentLang === 'ar' ? 'en' : 'ar';
+            const t = translations[currentLang];
+            
+            // تحديث النصوص
+            document.documentElement.lang = currentLang;
+            document.documentElement.dir = t.dir;
+            document.getElementById('mainTitle').textContent = t.title;
+            document.getElementById('subTitle').textContent = t.subtitle;
+            document.getElementById('loginHint').textContent = t.loginHint;
+            document.getElementById('googleText').textContent = t.googleBtn;
+            document.getElementById('githubText').textContent = t.githubBtn;
+            langToggleBtn.textContent = t.toggleText;
+        });
+    </script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, GithubAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 
         const firebaseConfig = {
@@ -113,22 +147,38 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const analytics = getAnalytics(app);
+        
+        // Providers
         const googleProvider = new GoogleAuthProvider();
+        const githubProvider = new GithubAuthProvider();
 
-        const btn = document.getElementById('googleLogin');
+        const googleBtn = document.getElementById('googleLogin');
+        const githubBtn = document.getElementById('githubLogin');
         const toast = document.getElementById('toast');
 
         // Check if user is already logged in
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                navigateToPage('index.html');
+                if(typeof navigateToPage === 'function') {
+                    navigateToPage('index.html');
+                } else {
+                    window.location.href = 'index.html';
+                }
             }
         });
 
-        btn.onclick = async () => {
-            btn.disabled = true;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<div class="loader"></div>';
+        // دالة لإظهار رسائل الخطأ بناءً على اللغة
+        const showError = () => {
+            toast.textContent = currentLang === 'ar' ? "خطأ في تسجيل الدخول، حاول مرة أخرى" : "Login failed, please try again";
+            toast.style.opacity = '1';
+            setTimeout(() => toast.style.opacity = '0', 3000);
+        };
+
+        // Google Login
+        googleBtn.onclick = async () => {
+            googleBtn.disabled = true;
+            const originalHTML = googleBtn.innerHTML;
+            googleBtn.innerHTML = '<div class="loader"></div>';
 
             try {
                 const result = await signInWithPopup(auth, googleProvider);
@@ -136,22 +186,43 @@
                 localStorage.setItem('userEmail', user.email);
                 localStorage.setItem('userName', user.displayName);
                 localStorage.setItem('userPhoto', user.photoURL);
-                navigateToPage('index.html');
+                if(typeof navigateToPage === 'function') {
+                    navigateToPage('index.html');
+                } else {
+                    window.location.href = 'index.html';
+                }
             } catch (err) {
                 console.error(err);
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                toast.textContent = "خطأ في تسجيل الدخول، حاول مرة أخرى";
-                toast.style.opacity = '1';
-                setTimeout(() => toast.style.opacity = '0', 3000);
+                googleBtn.innerHTML = originalHTML;
+                googleBtn.disabled = false;
+                showError();
             }
         };
 
-        // GitHub Placeholder
-        document.getElementById('githubLogin').onclick = () => {
-            toast.textContent = "GitHub login coming soon";
-            toast.style.opacity = '1';
-            setTimeout(() => toast.style.opacity = '0', 3000);
+        // GitHub Login
+        githubBtn.onclick = async () => {
+            githubBtn.disabled = true;
+            const originalHTML = githubBtn.innerHTML;
+            // استخدام loader أسود لأن زر جيتهاب خلفيته بيضاء
+            githubBtn.innerHTML = '<div class="loader" style="border-top-color: #000;"></div>';
+
+            try {
+                const result = await signInWithPopup(auth, githubProvider);
+                const user = result.user;
+                localStorage.setItem('userEmail', user.email);
+                localStorage.setItem('userName', user.displayName);
+                localStorage.setItem('userPhoto', user.photoURL);
+                if(typeof navigateToPage === 'function') {
+                    navigateToPage('index.html');
+                } else {
+                    window.location.href = 'index.html';
+                }
+            } catch (err) {
+                console.error(err);
+                githubBtn.innerHTML = originalHTML;
+                githubBtn.disabled = false;
+                showError();
+            }
         };
     </script>
 </body>
