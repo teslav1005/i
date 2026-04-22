@@ -4,7 +4,11 @@ import { collection, addDoc, query, where, getDocs, doc, updateDoc, orderBy, del
 
 let currentUser = null;
 let currentChatId = null;
+let currentModel = "mistral";
+let selectedModel = "mistral";
 let pendingAttachment = null;
+let allModels = [];
+const BACKEND_URL = "http://localhost:8000"; // تعديل هذا حسب عنوان الباك اند الفعلي
 
 const dom = {
     sidebar: document.getElementById('sidebar'),
@@ -21,7 +25,80 @@ const dom = {
     attachMenu: document.getElementById('attachMenu'),
     newChatBtn: document.getElementById('newChatBtn'),
     historyList: document.getElementById('historyList'),
-    attachmentPreview: document.getElementById('attachmentPreview')
+    attachmentPreview: document.getElementById('attachmentPreview'),
+    modelModal: document.getElementById('modelModal'),
+    modelsGrid: document.getElementById('modelsGrid'),
+    modelBtn: document.getElementById('modelBtn')
+};
+
+// تحميل النماذج من الباك اند
+const loadModels = async () => {
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/models`);
+        const data = await response.json();
+        allModels = data.models || [];
+        renderModels();
+    } catch (e) {
+        console.error("Error loading models:", e);
+        allModels = [
+            { id: "mistral", name: "Mistral", description: "Fast and efficient" },
+            { id: "gemini-fast", name: "Gemini Fast", description: "Quick responses" },
+            { id: "minimax", name: "Minimax", description: "High performance" },
+            { id: "claude-fast", name: "Claude Fast", description: "Smart and concise" },
+            { id: "kimi", name: "Kimi", description: "Long context support" },
+            { id: "polly", name: "Polly", description: "Creative writing" },
+            { id: "perplexity-reasoning", name: "Perplexity", description: "Deep reasoning" },
+            { id: "deepseek", name: "DeepSeek", description: "Advanced coding" },
+            { id: "grok", name: "Grok", description: "Real-time knowledge" }
+        ];
+        renderModels();
+    }
+};
+
+const renderModels = () => {
+    dom.modelsGrid.innerHTML = '';
+    const modelIcons = {
+        "mistral": "🚀",
+        "gemini-fast": "✨",
+        "minimax": "⚡",
+        "claude-fast": "🧠",
+        "kimi": "📚",
+        "polly": "🎨",
+        "perplexity-reasoning": "🔍",
+        "deepseek": "💻",
+        "grok": "🌐"
+    };
+
+    allModels.forEach(model => {
+        const card = document.createElement('div');
+        card.className = `model-card ${model.id === selectedModel ? 'selected' : ''}`;
+        card.onclick = () => selectModel(model.id);
+        card.innerHTML = `
+            <div class="model-card-icon">${modelIcons[model.id] || '🤖'}</div>
+            <div class="model-card-name">${model.name}</div>
+            <div class="model-card-desc">${model.description}</div>
+        `;
+        dom.modelsGrid.appendChild(card);
+    });
+};
+
+const selectModel = (modelId) => {
+    selectedModel = modelId;
+    renderModels();
+};
+
+window.openModelModal = () => {
+    dom.modelModal.style.display = 'flex';
+};
+
+window.closeModelModal = () => {
+    dom.modelModal.style.display = 'none';
+};
+
+window.confirmModelSelection = () => {
+    currentModel = selectedModel;
+    window.toast(`تم اختيار نموذج: ${allModels.find(m => m.id === currentModel)?.name || currentModel}`);
+    window.closeModelModal();
 };
 
 // Auth State Listener
@@ -255,23 +332,44 @@ window.handleSend = async () => {
     dom.messageBox.appendChild(typing);
     dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
 
-    setTimeout(async () => {
-        const aiRes = "هذا رد تجريبي من Afnan ai.";
+    try {
+        // إرسال الرسالة إلى الباك اند
+        const response = await fetch(`${BACKEND_URL}/api/chat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: currentText,
+                model: currentModel,
+                userId: currentUser.uid,
+                chatId: currentChatId,
+                stream: false
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const aiRes = data.response;
+        const newChatId = data.chatId;
+
         typing.remove();
         appendMessage('bot', aiRes);
 
-        try {
-            const msgUser = { sender: 'user', text: currentText, attachment: currentAttach, timestamp: new Date() };
-            const msgBot = { sender: 'bot', text: aiRes, timestamp: new Date() };
-            if (!currentChatId) {
-                const ref = await addDoc(collection(db, 'chats'), { userId: currentUser.uid, title: currentText.split(' ').slice(0, 3).join(' '), messages: [msgUser, msgBot], createdAt: new Date(), updatedAt: new Date(), isPinned: false });
-                currentChatId = ref.id;
-            } else {
-                await updateDoc(doc(db, 'chats', currentChatId), { messages: arrayUnion(msgUser, msgBot), updatedAt: new Date() });
-            }
-            await loadChatHistory();
-        } catch (e) { console.error(e); }
-    }, 1000);
+        // تحديث معرف المحادثة إذا كانت جديدة
+        if (!currentChatId && newChatId) {
+            currentChatId = newChatId;
+        }
+
+        await loadChatHistory();
+    } catch (e) {
+        console.error("Error:", e);
+        typing.remove();
+        appendMessage('bot', 'حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
+    }
 };
 
 dom.sendBtn.onclick = window.handleSend;
@@ -284,3 +382,6 @@ window.toast = (msg) => {
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 2000);
 };
+
+// تحميل النماذج عند بدء التطبيق
+loadModels();

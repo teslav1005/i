@@ -79,7 +79,8 @@
                             <div id="pickImage" class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-image"></i> <span>صورة</span></div>
                             <div id="pickFile" class="p-2 hover:bg-gray-100 rounded-lg cursor-pointer flex items-center gap-3"><i class="fa-solid fa-file"></i> <span>ملف</span></div>
                         </div>
-                        <button id="attachBtn" class="w-12 h-12 flex items-center justify-center rounded-full text-gray-400"><i class="fa-solid fa-plus text-xl"></i></button>
+                        <button id="modelBtn" class="w-12 h-12 flex items-center justify-center rounded-full text-gray-400" onclick="window.openModelModal()"><i class="fa-solid fa-plus text-xl"></i></button>
+                        <button id="attachBtn" class="w-12 h-12 flex items-center justify-center rounded-full text-gray-400 hidden"><i class="fa-solid fa-paperclip text-xl"></i></button>
                         <input type="file" id="imageInput" accept="image/*" class="hidden">
                         <input type="file" id="fileInput" class="hidden">
                         <textarea id="chatInput" rows="1" placeholder="اسأل Afnan ai..." class="flex-1 bg-transparent border-none focus:ring-0 py-3 px-2 text-[16px] resize-none max-h-40 hide-scrollbar" dir="auto"></textarea>
@@ -99,6 +100,21 @@
             <div class="flex gap-4">
                 <button id="confirmYes" class="flex-1 bg-black text-white py-3 rounded-2xl font-bold">نعم</button>
                 <button id="confirmNo" class="flex-1 bg-gray-100 text-gray-800 py-3 rounded-2xl font-bold">لا</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Model Selection Modal -->
+    <div id="modelModal" class="flex">
+        <div class="model-modal-content">
+            <div class="model-modal-header">
+                <h2>اختر نموذج الذكاء الاصطناعي</h2>
+                <button class="model-modal-close" onclick="window.closeModelModal()">&times;</button>
+            </div>
+            <div class="models-grid" id="modelsGrid"></div>
+            <div class="model-modal-footer">
+                <button class="btn-cancel" onclick="window.closeModelModal()">إلغاء</button>
+                <button class="btn-confirm" onclick="window.confirmModelSelection()">تأكيد</button>
             </div>
         </div>
     </div>
