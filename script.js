@@ -1,13 +1,11 @@
-// تم حذف أي استيراد لـ Firebase من هنا
-// الاعتماد بالكامل على الباك اند في am-brown.vercel.app
+import { auth, db } from './api.js';
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { collection, addDoc, query, where, getDocs, doc, updateDoc, orderBy, deleteDoc, arrayUnion, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-let currentUser = { uid: "anonymous" }; // يمكن استبداله بنظام جلسات بسيط لاحقاً
+let currentUser = null;
 let currentChatId = null;
 let currentModel = "mistral";
-let selectedModel = "mistral";
 let pendingAttachment = null;
-let allModels = [];
-const BACKEND_URL = "https://am-brown.vercel.app"; 
 
 const dom = {
     sidebar: document.getElementById('sidebar'),
@@ -30,74 +28,46 @@ const dom = {
     modelBtn: document.getElementById('modelBtn')
 };
 
-// تحميل النماذج من الباك اند
-const loadModels = async () => {
-    try {
-        const response = await fetch(`${BACKEND_URL}/api/models`);
-        const data = await response.json();
-        allModels = data.models || [];
-        renderModels();
-    } catch (e) {
-        console.error("Error loading models:", e);
-        allModels = [
-            { id: "mistral", name: "Mistral", description: "Fast and efficient" },
-            { id: "gemini-fast", name: "Gemini Fast", description: "Quick responses" },
-            { id: "minimax", name: "Minimax", description: "High performance" },
-            { id: "claude-fast", name: "Claude Fast", description: "Smart and concise" },
-            { id: "kimi", name: "Kimi", description: "Long context support" },
-            { id: "polly", name: "Polly", description: "Creative writing" },
-            { id: "perplexity-reasoning", name: "Perplexity", description: "Deep reasoning" },
-            { id: "deepseek", name: "DeepSeek", description: "Advanced coding" },
-            { id: "grok", name: "Grok", description: "Real-time knowledge" }
-        ];
-        renderModels();
-    }
-};
+// Auth State Listener
+onAuthStateChanged(auth, async (user) => {
+    const loginBtnHeader = document.getElementById('loginBtnHeader');
+    const profileSection = document.getElementById('profileSection');
 
-const renderModels = () => {
-    dom.modelsGrid.innerHTML = '';
-    const modelIcons = {
-        "mistral": "🚀",
-        "gemini-fast": "✨",
-        "minimax": "⚡",
-        "claude-fast": "🧠",
-        "kimi": "📚",
-        "polly": "🎨",
-        "perplexity-reasoning": "🔍",
-        "deepseek": "💻",
-        "grok": "🌐"
-    };
-
-    allModels.forEach(model => {
-        const card = document.createElement('div');
-        card.className = `model-card ${model.id === currentModel ? 'selected' : ''}`;
-        card.onclick = () => selectModel(model.id);
-        card.innerHTML = `
-            <div class="model-card-icon">${modelIcons[model.id] || '🤖'}</div>
-            <div class="model-card-info">
-                <div class="model-card-name">${model.name}</div>
-                <div class="model-card-desc">${model.description}</div>
+    if (!user) {
+        currentUser = null;
+        if (loginBtnHeader) loginBtnHeader.style.display = 'block';
+        profileSection.innerHTML = '';
+        dom.historyList.innerHTML = '';
+    } else {
+        currentUser = user;
+        if (loginBtnHeader) loginBtnHeader.style.display = 'none';
+        profileSection.innerHTML = `
+            <div id="profileTrigger" class="flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer hover:bg-gray-200/50 transition-all">
+                <img id="profileImg" src="${user.photoURL || 'https://via.placeholder.com/40'}" alt="Profile" class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold text-sm object-cover">
+                <div class="flex-1 min-w-0">
+                    <p id="profileName" class="text-xs font-bold truncate">${user.displayName || 'User'}</p>
+                    <p id="profileEmail" class="text-xs text-gray-500 truncate">${user.email || ''}</p>
+                </div>
+                <i class="fa-solid fa-ellipsis-vertical text-gray-300 text-xs"></i>
+            </div>
+            <div id="profilePopup" class="glass p-2 space-y-1">
+                <a href="javascript:void(0)" onclick="window.navigateToPage('privacy.html')" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">سياسة الخصوصية</a>
+                <a href="javascript:void(0)" onclick="window.navigateToPage('terms.html')" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">اتفاقية المستخدم</a>
+                <button id="logoutBtn" class="w-full text-right p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">تسجيل الخروج</button>
+                <button id="deleteAccountBtn" class="w-full text-right p-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-all">حذف الحساب</button>
             </div>
         `;
-        dom.modelsGrid.appendChild(card);
-    });
-};
+        setupProfileListeners();
+        await loadChatHistory();
+    }
+});
 
-const selectModel = (modelId) => {
-    currentModel = modelId;
-    window.toast(`تم اختيار نموذج: ${allModels.find(m => m.id === currentModel)?.name || currentModel}`);
-    renderModels();
-    window.closeModelModal();
-};
-
-window.openModelModal = (e) => {
-    if (e) e.stopPropagation();
-    const isVisible = dom.modelModal.style.display === 'flex';
-    dom.modelModal.style.display = isVisible ? 'none' : 'flex';
-};
-
-window.closeModelModal = () => {
-    dom.modelModal.style.display = 'none';
+const setupProfileListeners = () => {
+    const trigger = document.getElementById('profileTrigger');
+    const popup = document.getElementById('profilePopup');
+    if (trigger) trigger.onclick = (e) => { e.stopPropagation(); popup.style.display = popup.style.display === 'block' ? 'none' : 'block'; };
+    document.getElementById('logoutBtn').onclick = () => dom.logoutConfirm.style.display = 'flex';
+    document.getElementById('deleteAccountBtn').onclick = () => window.navigateToPage('delete-account.html');
 };
 
 // Sidebar Logic
@@ -156,8 +126,10 @@ window.onclick = () => {
     const popup = document.getElementById('profilePopup');
     if (popup) popup.style.display = 'none';
     dom.attachMenu.style.display = 'none';
-    window.closeModelModal();
 };
+
+dom.confirmNo.onclick = () => dom.logoutConfirm.style.display = 'none';
+dom.confirmYes.onclick = async () => { await signOut(auth); window.navigateToPage('index.html'); };
 
 dom.newChatBtn.onclick = () => {
     dom.messageBox.innerHTML = '';
@@ -168,17 +140,18 @@ dom.newChatBtn.onclick = () => {
     if(window.innerWidth < 768) toggleSidebar(false);
 };
 
-// Chat History عبر الباك اند
+// Chat History
 const loadChatHistory = async () => {
     if (!currentUser) return;
     try {
-        const response = await fetch(`${BACKEND_URL}/api/chats/${currentUser.uid}`);
-        const data = await response.json();
+        const q = query(collection(db, 'chats'), where('userId', '==', currentUser.uid), orderBy('updatedAt', 'desc'));
+        const snap = await getDocs(q);
         dom.historyList.innerHTML = '';
-        (data.chats || []).forEach((chat) => {
-            const chatId = chat.id;
+        snap.forEach((docSnap) => {
+            const chat = docSnap.data();
+            const chatId = docSnap.id;
             const item = document.createElement('div');
-            item.className = `group flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 transition-all cursor-pointer text-sm text-gray-700 ${chat.isPinned ? 'bg-gray-50 border-r-4 border-black' : ''}`;
+            item.className = `group flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 transition-all cursor-pointer text-sm text-gray-700`;
             
             let preview = chat.title || 'محادثة جديدة';
             item.innerHTML = `
@@ -199,10 +172,10 @@ window.loadChat = async (chatId) => {
     dom.messageBox.innerHTML = '';
     dom.emptyView.style.display = 'none';
     try {
-        const response = await fetch(`${BACKEND_URL}/api/chat/${chatId}`);
-        const data = await response.json();
-        if (data.messages) {
-            data.messages.forEach(msg => {
+        const snap = await getDocs(query(collection(db, 'chats'), where('__name__', '==', chatId)));
+        if (!snap.empty) {
+            const chat = snap.docs[0].data();
+            chat.messages.forEach(msg => {
                 appendMessage(msg.sender, msg.text, msg.attachment);
             });
         }
@@ -211,7 +184,7 @@ window.loadChat = async (chatId) => {
     if(window.innerWidth < 768) toggleSidebar(false);
 };
 
-const appendMessage = (sender, text, attachment, sources = []) => {
+const appendMessage = (sender, text, attachment) => {
     const div = document.createElement('div');
     div.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} animate-msg mb-6`;
     
@@ -219,15 +192,6 @@ const appendMessage = (sender, text, attachment, sources = []) => {
     if (attachment) {
         if (attachment.type === 'image') content = `<img src="${attachment.data}" class="image-preview"><p class="mt-2">${text}</p>`;
         else content = `<div class="flex items-center gap-2"><i class="fa-solid fa-file"></i> ${attachment.name}</div><p class="mt-2">${text}</p>`;
-    }
-
-    if (sources && sources.length > 0) {
-        content += `<div class="mt-3 pt-2 border-t border-gray-100 text-[11px] text-gray-400">
-            <p class="font-bold mb-1">المصادر:</p>
-            <ul class="list-disc list-inside">
-                ${sources.map(s => `<li>${s}</li>`).join('')}
-            </ul>
-        </div>`;
     }
 
     if (sender === 'user') {
@@ -238,13 +202,6 @@ const appendMessage = (sender, text, attachment, sources = []) => {
                 <img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" class="w-6 h-6 mt-1 shrink-0">
                 <div>
                     <div class="bg-white border border-gray-100 px-5 py-3.5 rounded-[1.8rem] rounded-tl-md text-gray-800 text-[15px]">${content}</div>
-                    <div class="msg-actions">
-                        <div class="action-btn" onclick="window.copyToClipboard('${text.replace(/'/g, "\\'")}')"><i class="fa-regular fa-copy"></i></div>
-                        <div class="action-btn" onclick="window.toast('تم الإعجاب')"><i class="fa-regular fa-thumbs-up"></i></div>
-                        <div class="action-btn" onclick="window.toast('لم يعجبني')"><i class="fa-regular fa-thumbs-down"></i></div>
-                        <div class="action-btn" onclick="window.handleSend()"><i class="fa-solid fa-rotate-right"></i></div>
-                        <div class="action-btn" onclick="window.toast('جاري المشاركة...')"><i class="fa-regular fa-share-from-square"></i></div>
-                    </div>
                 </div>
             </div>
         `;
@@ -253,70 +210,60 @@ const appendMessage = (sender, text, attachment, sources = []) => {
     dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
 };
 
-window.copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text).then(() => window.toast('تم النسخ إلى الحافظة'));
-};
-
 window.deleteChat = async (chatId) => {
-    if (confirm("حذف المحادثة؟")) {
-        if (currentChatId === chatId) dom.newChatBtn.click();
-        await loadChatHistory();
-    }
+    if (confirm("حذف المحادثة؟")) { await deleteDoc(doc(db, 'chats', chatId)); if (currentChatId === chatId) dom.newChatBtn.click(); await loadChatHistory(); }
 };
 
-// Send Message
+// Send Message (المحاكاة الأصلية أو الاتصال المباشر بـ API خارجي)
 window.handleSend = async () => {
     const val = dom.chatInput.value.trim();
     if (!val && !pendingAttachment) return;
+    if (!currentUser) { window.navigateToPage('login.html'); return; }
 
     dom.emptyView.style.display = 'none';
     appendMessage('user', val, pendingAttachment);
     
     const currentText = val;
+    const currentAttach = pendingAttachment;
     dom.chatInput.value = '';
     window.removeAttachment();
 
     const typing = document.createElement('div');
     typing.className = 'flex items-start gap-3 animate-msg mb-6';
-    typing.innerHTML = `
-        <img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" class="w-6 h-6 mt-1">
-        <div class="flex flex-col gap-2">
-            <div class="bg-white border border-gray-100 px-5 py-3.5 rounded-[1.8rem] rounded-tl-md text-gray-400 text-[13px] flex items-center gap-2">
-                <i class="fa-solid fa-magnifying-glass animate-pulse"></i>
-                <span>جاري البحث والتحليل...</span>
-            </div>
-            <div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
-        </div>
-    `;
+    typing.innerHTML = `<img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" class="w-6 h-6 mt-1"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
     dom.messageBox.appendChild(typing);
     dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
 
     try {
-        const response = await fetch(`${BACKEND_URL}/api/chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: currentText,
-                model: currentModel,
-                userId: currentUser.uid,
-                chatId: currentChatId,
-                stream: false,
-                use_search: true
-            })
-        });
-
-        if (!response.ok) throw new Error(`API error: ${response.status}`);
-
-        const data = await response.json();
+        // محاكاة رد أو اتصال مباشر بـ API
+        const aiRes = "هذا رد تجريبي من النسخة الأصلية للفرونت اند.";
+        
         typing.remove();
-        appendMessage('bot', data.response, null, data.sources);
+        appendMessage('bot', aiRes);
 
-        if (!currentChatId && data.chatId) currentChatId = data.chatId;
+        // حفظ في Firestore مباشرة من الفرونت اند
+        const msgUser = { sender: 'user', text: currentText, attachment: currentAttach, timestamp: new Date() };
+        const msgBot = { sender: 'bot', text: aiRes, timestamp: new Date() };
+
+        if (!currentChatId) {
+            const docRef = await addDoc(collection(db, 'chats'), {
+                userId: currentUser.uid,
+                title: currentText.substring(0, 30),
+                messages: [msgUser, msgBot],
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            });
+            currentChatId = docRef.id;
+        } else {
+            await updateDoc(doc(db, 'chats', currentChatId), {
+                messages: arrayUnion(msgUser, msgBot),
+                updatedAt: serverTimestamp()
+            });
+        }
         await loadChatHistory();
     } catch (e) {
-        console.error("Error:", e);
+        console.error(e);
         typing.remove();
-        appendMessage('bot', 'حدث خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
     }
 };
 
@@ -330,8 +277,3 @@ window.toast = (msg) => {
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 2000);
 };
-
-// تحميل النماذج وتاريخ المحادثات عند بدء التطبيق
-loadModels();
-loadChatHistory();
-dom.modelBtn.onclick = window.openModelModal;
