@@ -1,12 +1,12 @@
 {
     "firebase": {
-        "apiKey": "AIzaSyC89TjMlrtfh88o_HDgCHD42hAvXMZ6fQM",
-        "authDomain": "afnan-49d21.firebaseapp.com",
-        "projectId": "afnan-49d21",
-        "storageBucket": "afnan-49d21.firebasestorage.app",
-        "messagingSenderId": "886430112619",
-        "appId": "1:886430112619:web:278b9ea777f4dda77b0a2e",
-        "measurementId": "G-EWMJ8ZPY7X"
+        "apiKey": "AIzaSyCLghqPsBSQg0EtXfAXBMig5m7We2culC0",
+        "authDomain": "afnan-95bbe.firebaseapp.com",
+        "projectId": "afnan-95bbe",
+        "storageBucket": "afnan-95bbe.firebasestorage.app",
+        "messagingSenderId": "118735157182",
+        "appId": "1:118735157182:web:6dc5c4bf43d9f32e49abef",
+        "measurementId": "G-J7Q6KZSGHC"
     },
     "app": {
         "name": "Afnan ai",
