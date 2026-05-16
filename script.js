@@ -4,7 +4,6 @@ import { collection, addDoc, query, where, getDocs, doc, updateDoc, orderBy, del
 
 let currentUser = null;
 let currentChatId = null;
-let currentModel = "mistral";
 let pendingAttachment = null;
 
 const dom = {
@@ -23,9 +22,9 @@ const dom = {
     newChatBtn: document.getElementById('newChatBtn'),
     historyList: document.getElementById('historyList'),
     attachmentPreview: document.getElementById('attachmentPreview'),
-    modelModal: document.getElementById('modelModal'),
-    modelsGrid: document.getElementById('modelsGrid'),
-    modelBtn: document.getElementById('modelBtn')
+    imageViewer: document.getElementById('imageViewer'),
+    viewerImg: document.getElementById('viewerImg'),
+    deleteImageBtn: document.getElementById('deleteImageBtn')
 };
 
 // Auth State Listener
@@ -50,7 +49,7 @@ onAuthStateChanged(auth, async (user) => {
                 </div>
                 <i class="fa-solid fa-ellipsis-vertical text-gray-300 text-xs"></i>
             </div>
-            <div id="profilePopup" class="glass p-2 space-y-1">
+            <div id="profilePopup" class="glass p-2 space-y-1" style="display:none; position:absolute; bottom:70px; left:10px; width:220px; z-index:200; border-radius:1.5rem; box-shadow:0 10px 25px rgba(0,0,0,0.1);">
                 <a href="javascript:void(0)" onclick="window.navigateToPage('privacy.html')" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">سياسة الخصوصية</a>
                 <a href="javascript:void(0)" onclick="window.navigateToPage('terms.html')" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">اتفاقية المستخدم</a>
                 <button id="logoutBtn" class="w-full text-right p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">تسجيل الخروج</button>
@@ -79,12 +78,15 @@ const toggleSidebar = (val) => {
 };
 
 document.getElementById('sidebarToggle').onclick = () => toggleSidebar();
-dom.overlay.onclick = () => toggleSidebar(false);
+dom.overlay.onclick = () => {
+    toggleSidebar(false);
+    dom.attachMenu.classList.add('hidden');
+};
 
 // Attachment Logic
 dom.attachBtn.onclick = (e) => {
     e.stopPropagation();
-    dom.attachMenu.style.display = dom.attachMenu.style.display === 'block' ? 'none' : 'block';
+    dom.attachMenu.classList.toggle('hidden');
 };
 
 const imageInput = document.getElementById('imageInput');
@@ -94,29 +96,55 @@ document.getElementById('pickFile').onclick = () => fileInput.click();
 
 const showAttachmentPreview = (file, isImage) => {
     dom.attachmentPreview.innerHTML = '';
-    dom.attachmentPreview.style.display = 'block';
+    dom.attachmentPreview.classList.remove('hidden');
     const reader = new FileReader();
     reader.onload = (e) => {
         pendingAttachment = { name: file.name, data: e.target.result, type: isImage ? 'image' : 'file' };
         const item = document.createElement('div');
-        item.className = 'preview-item';
+        item.className = 'floating-preview';
         if (isImage) {
-            item.innerHTML = `<img src="${e.target.result}"><div class="remove-btn" onclick="window.removeAttachment()">&times;</div>`;
+            item.innerHTML = `
+                <img src="${e.target.result}" onclick="window.openImageViewer('${e.target.result}')">
+                <div class="remove-btn" onclick="window.removeAttachment()"><i class="fa-solid fa-xmark"></i></div>
+            `;
         } else {
-            item.innerHTML = `<div class="file-preview-icon"><i class="fa-solid fa-file"></i><div class="file-preview-name">${file.name}</div></div><div class="remove-btn" onclick="window.removeAttachment()">&times;</div>`;
+            item.innerHTML = `
+                <div class="file-preview-icon" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f9f9f9; border-radius:1.2rem; font-size:24px; color:#666;">
+                    <i class="fa-solid fa-file"></i>
+                    <div style="font-size:8px; padding:2px; text-align:center; width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</div>
+                </div>
+                <div class="remove-btn" onclick="window.removeAttachment()"><i class="fa-solid fa-xmark"></i></div>
+            `;
         }
         dom.attachmentPreview.appendChild(item);
     };
     reader.readAsDataURL(file);
-    dom.attachMenu.style.display = 'none';
+    dom.attachMenu.classList.add('hidden');
 };
 
 window.removeAttachment = () => {
     pendingAttachment = null;
     dom.attachmentPreview.innerHTML = '';
-    dom.attachmentPreview.style.display = 'none';
+    dom.attachmentPreview.classList.add('hidden');
     imageInput.value = '';
     fileInput.value = '';
+    window.closeImageViewer();
+};
+
+// Image Viewer Functions
+window.openImageViewer = (src) => {
+    dom.viewerImg.src = src;
+    dom.imageViewer.classList.remove('hidden');
+    dom.imageViewer.classList.add('flex');
+};
+
+window.closeImageViewer = () => {
+    dom.imageViewer.classList.add('hidden');
+    dom.imageViewer.classList.remove('flex');
+};
+
+dom.deleteImageBtn.onclick = () => {
+    window.removeAttachment();
 };
 
 imageInput.onchange = (e) => { if (e.target.files[0]) showAttachmentPreview(e.target.files[0], true); };
@@ -125,7 +153,7 @@ fileInput.onchange = (e) => { if (e.target.files[0]) showAttachmentPreview(e.tar
 window.onclick = () => {
     const popup = document.getElementById('profilePopup');
     if (popup) popup.style.display = 'none';
-    dom.attachMenu.style.display = 'none';
+    dom.attachMenu.classList.add('hidden');
 };
 
 dom.confirmNo.onclick = () => dom.logoutConfirm.style.display = 'none';
@@ -190,7 +218,7 @@ const appendMessage = (sender, text, attachment) => {
     
     let content = text;
     if (attachment) {
-        if (attachment.type === 'image') content = `<img src="${attachment.data}" class="image-preview"><p class="mt-2">${text}</p>`;
+        if (attachment.type === 'image') content = `<img src="${attachment.data}" class="image-preview" onclick="window.openImageViewer('${attachment.data}')"><p class="mt-2">${text}</p>`;
         else content = `<div class="flex items-center gap-2"><i class="fa-solid fa-file"></i> ${attachment.name}</div><p class="mt-2">${text}</p>`;
     }
 
@@ -214,7 +242,6 @@ window.deleteChat = async (chatId) => {
     if (confirm("حذف المحادثة؟")) { await deleteDoc(doc(db, 'chats', chatId)); if (currentChatId === chatId) dom.newChatBtn.click(); await loadChatHistory(); }
 };
 
-// Send Message (المحاكاة الأصلية أو الاتصال المباشر بـ API خارجي)
 window.handleSend = async () => {
     const val = dom.chatInput.value.trim();
     if (!val && !pendingAttachment) return;
@@ -235,13 +262,10 @@ window.handleSend = async () => {
     dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
 
     try {
-        // محاكاة رد أو اتصال مباشر بـ API
         const aiRes = "هذا رد تجريبي من النسخة الأصلية للفرونت اند.";
-        
         typing.remove();
         appendMessage('bot', aiRes);
 
-        // حفظ في Firestore مباشرة من الفرونت اند
         const msgUser = { sender: 'user', text: currentText, attachment: currentAttach, timestamp: new Date() };
         const msgBot = { sender: 'bot', text: aiRes, timestamp: new Date() };
 
