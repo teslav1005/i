@@ -17,8 +17,8 @@ const dom = {
     logoutConfirm: document.getElementById('logoutConfirm'),
     confirmYes: document.getElementById('confirmYes'),
     confirmNo: document.getElementById('confirmNo'),
-    attachBtn: document.getElementById('attachBtn'),
-    attachMenu: document.getElementById('attachMenu'),
+    attachBtn: document.getElementById('mainAttachBtn'),
+    attachMenu: document.getElementById('mainAttachMenu'),
     newChatBtn: document.getElementById('newChatBtn'),
     historyList: document.getElementById('historyList'),
     attachmentPreview: document.getElementById('attachmentPreview'),
@@ -89,29 +89,37 @@ const toggleAttachMenu = (e) => {
         e.preventDefault();
         e.stopPropagation();
     }
-    dom.attachMenu.classList.toggle('hidden');
+    const isHidden = dom.attachMenu.classList.contains('hidden');
+    if (isHidden) {
+        dom.attachMenu.classList.remove('hidden');
+        dom.attachMenu.style.display = 'block';
+    } else {
+        dom.attachMenu.classList.add('hidden');
+        dom.attachMenu.style.display = 'none';
+    }
 };
 
 // Use both click and touchstart for maximum responsiveness
-dom.attachBtn.addEventListener('click', toggleAttachMenu);
-dom.attachBtn.addEventListener('touchstart', (e) => {
-    toggleAttachMenu(e);
-}, { passive: false });
+if (dom.attachBtn) {
+    dom.attachBtn.addEventListener('click', toggleAttachMenu);
+    dom.attachBtn.addEventListener('touchstart', (e) => {
+        toggleAttachMenu(e);
+    }, { passive: false });
+}
 
 const imageInput = document.getElementById('imageInput');
 const fileInput = document.getElementById('fileInput');
 
-document.getElementById('pickImage').onclick = (e) => { 
-    e.stopPropagation(); 
-    imageInput.click(); 
-    dom.attachMenu.classList.add('hidden');
-};
+// Option Listeners
+const optImage = document.getElementById('optImage');
+const optFile = document.getElementById('optFile');
+const optWeb = document.getElementById('optWeb');
+const optBrain = document.getElementById('optBrain');
 
-document.getElementById('pickFile').onclick = (e) => { 
-    e.stopPropagation(); 
-    fileInput.click(); 
-    dom.attachMenu.classList.add('hidden');
-};
+if (optImage) optImage.onclick = (e) => { e.stopPropagation(); imageInput.click(); dom.attachMenu.classList.add('hidden'); dom.attachMenu.style.display = 'none'; };
+if (optFile) optFile.onclick = (e) => { e.stopPropagation(); fileInput.click(); dom.attachMenu.classList.add('hidden'); dom.attachMenu.style.display = 'none'; };
+if (optWeb) optWeb.onclick = (e) => { e.stopPropagation(); window.toast("تم تفعيل البحث في الويب"); dom.attachMenu.classList.add('hidden'); dom.attachMenu.style.display = 'none'; };
+if (optBrain) optBrain.onclick = (e) => { e.stopPropagation(); window.toast("تم تفعيل التفكير العميق"); dom.attachMenu.classList.add('hidden'); dom.attachMenu.style.display = 'none'; };
 
 const showAttachmentPreview = (file, isImage) => {
     dom.attachmentPreview.innerHTML = '';
@@ -173,8 +181,9 @@ window.addEventListener('click', (e) => {
     const popup = document.getElementById('profilePopup');
     if (popup) popup.style.display = 'none';
     
-    if (!dom.attachBtn.contains(e.target) && !dom.attachMenu.contains(e.target)) {
+    if (dom.attachBtn && !dom.attachBtn.contains(e.target) && dom.attachMenu && !dom.attachMenu.contains(e.target)) {
         dom.attachMenu.classList.add('hidden');
+        dom.attachMenu.style.display = 'none';
     }
 });
 
@@ -320,6 +329,15 @@ window.toast = (msg) => {
     const t = document.createElement('div');
     t.className = 'toast';
     t.textContent = msg;
+    t.style.position = 'fixed';
+    t.style.bottom = '100px';
+    t.style.left = '50%';
+    t.style.transform = 'translateX(-50%)';
+    t.style.background = 'rgba(0,0,0,0.8)';
+    t.style.color = 'white';
+    t.style.padding = '10px 20px';
+    t.style.borderRadius = '20px';
+    t.style.zIndex = '3000';
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 2000);
 };

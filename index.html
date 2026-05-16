@@ -73,39 +73,41 @@
         <div class="w-full bg-white p-4 md:p-8 pt-2 shrink-0 safe-pb">
             <div class="max-w-3xl mx-auto relative">
                 <!-- Attachment Preview (Floating above input) -->
-                <div id="attachmentPreview" class="absolute bottom-full left-0 mb-4 hidden" style="z-index: 50;">
+                <div id="attachmentPreview" class="absolute bottom-full left-0 mb-4 hidden" style="z-index: 500;">
                     <!-- Preview content will be injected here -->
                 </div>
 
                 <div class="chat-input-container bg-[#F4F4F4] rounded-[2.2rem] flex flex-col shadow-sm transition-all relative overflow-visible">
                     <div class="flex items-end gap-1.5 p-1.5 focus-within:bg-white rounded-[2.2rem] relative">
                         
-                        <!-- New Attachment Menu (Bottom Sheet Style) -->
-                        <div id="attachMenu" class="new-attach-menu glass p-2 hidden" style="position: absolute; bottom: 70px; left: 0; width: 280px; z-index: 1000; border-radius: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
-                            <div class="space-y-1">
-                                <div id="pickImage" class="attach-item p-3 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
-                                    <span class="text-sm font-medium">إرفاق صور</span>
-                                    <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-image text-gray-500"></i></div>
-                                </div>
-                                <div id="pickFile" class="attach-item p-3 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
-                                    <span class="text-sm font-medium">إرفاق ملفات</span>
-                                    <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-paperclip text-gray-500"></i></div>
-                                </div>
-                                <div class="attach-item p-3 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
-                                    <span class="text-sm font-medium">البحث في الويب</span>
-                                    <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-globe text-gray-500"></i></div>
-                                </div>
-                                <div class="attach-item p-3 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
-                                    <span class="text-sm font-medium">التفكير العميق</span>
-                                    <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-brain text-gray-500"></i></div>
+                        <!-- Main Toggle Button - Moved outside for absolute positioning if needed -->
+                        <div class="relative">
+                            <button id="mainAttachBtn" type="button" class="w-12 h-12 flex items-center justify-center rounded-full text-gray-900 bg-white shadow-sm cursor-pointer" style="z-index: 1100; position: relative;">
+                                <i class="fa-solid fa-plus text-xl pointer-events-none"></i>
+                            </button>
+                            
+                            <!-- New Attachment Menu (Bottom Sheet Style) -->
+                            <div id="mainAttachMenu" class="glass p-2 hidden" style="position: absolute; bottom: 60px; right: 0; width: 280px; z-index: 1200; border-radius: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.15); animation: slideUp 0.3s ease-out;">
+                                <div class="space-y-1">
+                                    <div id="optImage" class="attach-item p-3 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
+                                        <span class="text-sm font-medium">إرفاق صور</span>
+                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-image text-gray-500"></i></div>
+                                    </div>
+                                    <div id="optFile" class="attach-item p-3 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
+                                        <span class="text-sm font-medium">إرفاق ملفات</span>
+                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-paperclip text-gray-500"></i></div>
+                                    </div>
+                                    <div id="optWeb" class="attach-item p-3 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
+                                        <span class="text-sm font-medium">البحث في الويب</span>
+                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-globe text-gray-500"></i></div>
+                                    </div>
+                                    <div id="optBrain" class="attach-item p-3 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
+                                        <span class="text-sm font-medium">التفكير العميق</span>
+                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-brain text-gray-500"></i></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Main Toggle Button with high z-index and explicit pointer events -->
-                        <button id="attachBtn" type="button" class="w-12 h-12 flex items-center justify-center rounded-full text-gray-900 bg-white shadow-sm cursor-pointer" style="z-index: 1100; position: relative; pointer-events: auto !important;">
-                            <i class="fa-solid fa-plus text-xl pointer-events-none"></i>
-                        </button>
 
                         <input type="file" id="imageInput" accept="image/*" class="hidden">
                         <input type="file" id="fileInput" class="hidden">
