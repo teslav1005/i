@@ -73,14 +73,15 @@
         <div class="w-full bg-white p-4 md:p-8 pt-2 shrink-0 safe-pb">
             <div class="max-w-3xl mx-auto relative">
                 <!-- Attachment Preview (Floating above input) -->
-                <div id="attachmentPreview" class="absolute bottom-full left-0 mb-4 hidden">
+                <div id="attachmentPreview" class="absolute bottom-full left-0 mb-4 hidden" style="z-index: 50;">
                     <!-- Preview content will be injected here -->
                 </div>
 
                 <div class="chat-input-container bg-[#F4F4F4] rounded-[2.2rem] flex flex-col shadow-sm transition-all relative overflow-visible">
-                    <div class="flex items-end gap-1.5 p-1.5 focus-within:bg-white rounded-[2.2rem]">
+                    <div class="flex items-end gap-1.5 p-1.5 focus-within:bg-white rounded-[2.2rem] relative">
+                        
                         <!-- New Attachment Menu (Bottom Sheet Style) -->
-                        <div id="attachMenu" class="new-attach-menu glass p-2 hidden">
+                        <div id="attachMenu" class="new-attach-menu glass p-2 hidden" style="position: absolute; bottom: 70px; left: 0; width: 280px; z-index: 1000; border-radius: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
                             <div class="space-y-1">
                                 <div id="pickImage" class="attach-item p-3 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
                                     <span class="text-sm font-medium">إرفاق صور</span>
@@ -101,10 +102,16 @@
                             </div>
                         </div>
 
-                        <button id="attachBtn" class="w-12 h-12 flex items-center justify-center rounded-full text-gray-900 bg-white shadow-sm" style="z-index: 210;"><i class="fa-solid fa-plus text-xl"></i></button>
+                        <!-- Main Toggle Button with high z-index and explicit pointer events -->
+                        <button id="attachBtn" type="button" class="w-12 h-12 flex items-center justify-center rounded-full text-gray-900 bg-white shadow-sm cursor-pointer" style="z-index: 1100; position: relative; pointer-events: auto !important;">
+                            <i class="fa-solid fa-plus text-xl pointer-events-none"></i>
+                        </button>
+
                         <input type="file" id="imageInput" accept="image/*" class="hidden">
                         <input type="file" id="fileInput" class="hidden">
+                        
                         <textarea id="chatInput" rows="1" placeholder="اسأل Afnan ai..." class="flex-1 bg-transparent border-none focus:ring-0 py-3 px-2 text-[16px] resize-none max-h-40 hide-scrollbar" dir="auto"></textarea>
+                        
                         <div class="flex items-center gap-2 mb-1 mr-1">
                             <button id="sendBtn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center disabled:opacity-50"><i class="fa-solid fa-arrow-up"></i></button>
                         </div>
@@ -115,7 +122,7 @@
     </main>
 
     <!-- Image Viewer Modal -->
-    <div id="imageViewer" class="fixed inset-0 bg-black z-[1000] hidden flex-col">
+    <div id="imageViewer" class="fixed inset-0 bg-black z-[2000] hidden flex-col">
         <div class="flex justify-between items-center p-6 text-white">
             <button onclick="window.closeImageViewer()" class="text-2xl"><i class="fa-solid fa-xmark"></i></button>
             <button id="deleteImageBtn" class="text-xl text-red-500"><i class="fa-solid fa-trash-can"></i></button>

@@ -83,17 +83,35 @@ dom.overlay.onclick = () => {
     dom.attachMenu.classList.add('hidden');
 };
 
-// Attachment Logic
-dom.attachBtn.onclick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+// Robust Attachment Toggle Logic
+const toggleAttachMenu = (e) => {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
     dom.attachMenu.classList.toggle('hidden');
 };
 
+// Use both click and touchstart for maximum responsiveness
+dom.attachBtn.addEventListener('click', toggleAttachMenu);
+dom.attachBtn.addEventListener('touchstart', (e) => {
+    toggleAttachMenu(e);
+}, { passive: false });
+
 const imageInput = document.getElementById('imageInput');
 const fileInput = document.getElementById('fileInput');
-document.getElementById('pickImage').onclick = (e) => { e.stopPropagation(); imageInput.click(); };
-document.getElementById('pickFile').onclick = (e) => { e.stopPropagation(); fileInput.click(); };
+
+document.getElementById('pickImage').onclick = (e) => { 
+    e.stopPropagation(); 
+    imageInput.click(); 
+    dom.attachMenu.classList.add('hidden');
+};
+
+document.getElementById('pickFile').onclick = (e) => { 
+    e.stopPropagation(); 
+    fileInput.click(); 
+    dom.attachMenu.classList.add('hidden');
+};
 
 const showAttachmentPreview = (file, isImage) => {
     dom.attachmentPreview.innerHTML = '';
@@ -120,7 +138,6 @@ const showAttachmentPreview = (file, isImage) => {
         dom.attachmentPreview.appendChild(item);
     };
     reader.readAsDataURL(file);
-    dom.attachMenu.classList.add('hidden');
 };
 
 window.removeAttachment = () => {
@@ -151,15 +168,15 @@ dom.deleteImageBtn.onclick = () => {
 imageInput.onchange = (e) => { if (e.target.files[0]) showAttachmentPreview(e.target.files[0], true); };
 fileInput.onchange = (e) => { if (e.target.files[0]) showAttachmentPreview(e.target.files[0], false); };
 
-window.onclick = (e) => {
+// Global click handler to close menus
+window.addEventListener('click', (e) => {
     const popup = document.getElementById('profilePopup');
     if (popup) popup.style.display = 'none';
     
-    // Close attach menu if clicking outside
     if (!dom.attachBtn.contains(e.target) && !dom.attachMenu.contains(e.target)) {
         dom.attachMenu.classList.add('hidden');
     }
-};
+});
 
 dom.confirmNo.onclick = () => dom.logoutConfirm.style.display = 'none';
 dom.confirmYes.onclick = async () => { await signOut(auth); window.navigateToPage('index.html'); };
