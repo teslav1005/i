@@ -72,38 +72,52 @@
 
         <div class="w-full bg-white p-4 md:p-8 pt-2 shrink-0 safe-pb">
             <div class="max-w-3xl mx-auto relative">
-                <!-- Attachment Preview (Floating above input) -->
-                <div id="attachmentPreview" class="absolute bottom-full left-0 mb-4 hidden" style="z-index: 500;">
-                    <!-- Preview content will be injected here -->
-                </div>
-
+                
                 <div class="chat-input-container bg-[#F4F4F4] rounded-[2.2rem] flex flex-col shadow-sm transition-all relative overflow-visible">
+                    
+                    <!-- Attachment Preview (Inside Input Container) -->
+                    <div id="attachmentPreview" class="px-4 pt-3 hidden flex-wrap gap-2">
+                        <!-- Preview content will be injected here -->
+                    </div>
+
                     <div class="flex items-end gap-1.5 p-1.5 focus-within:bg-white rounded-[2.2rem] relative">
                         
-                        <!-- Main Toggle Button - Moved outside for absolute positioning if needed -->
-                        <div class="relative">
-                            <button id="mainAttachBtn" type="button" class="w-12 h-12 flex items-center justify-center rounded-full text-gray-900 bg-white shadow-sm cursor-pointer" style="z-index: 1100; position: relative;">
-                                <i class="fa-solid fa-plus text-xl pointer-events-none"></i>
+                        <!-- Main Toggle Button -->
+                        <div class="relative flex items-center gap-1">
+                            <button id="mainAttachBtn" type="button" class="w-11 h-11 flex items-center justify-center rounded-full text-gray-900 bg-white shadow-sm cursor-pointer transition-transform active:scale-95" style="z-index: 1100;">
+                                <i class="fa-solid fa-plus text-lg pointer-events-none"></i>
                             </button>
+
+                            <!-- Active Mode Icon (Small, next to +) -->
+                            <div id="activeModeIndicator" class="hidden relative group">
+                                <div class="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-[10px] shadow-sm">
+                                    <i id="modeIcon" class="fa-solid fa-brain"></i>
+                                </div>
+                                <button id="cancelModeBtn" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] border border-white"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
                             
-                            <!-- New Attachment Menu (Bottom Sheet Style) -->
-                            <div id="mainAttachMenu" class="glass p-2 hidden" style="position: absolute; bottom: 60px; right: 0; width: 280px; z-index: 1200; border-radius: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.15); animation: slideUp 0.3s ease-out;">
-                                <div class="space-y-1">
-                                    <div id="optImage" class="attach-item p-3 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
-                                        <span class="text-sm font-medium">إرفاق صور</span>
-                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-image text-gray-500"></i></div>
+                            <!-- New Attachment Menu (Slimmer Design) -->
+                            <div id="mainAttachMenu" class="glass p-1.5 hidden" style="position: absolute; bottom: 55px; right: 0; width: 220px; z-index: 1200; border-radius: 1.8rem; box-shadow: 0 10px 30px rgba(0,0,0,0.12); animation: slideUp 0.2s ease-out;">
+                                <div class="space-y-0.5">
+                                    <div id="optImage" class="attach-item p-2.5 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
+                                        <span class="text-xs font-bold text-gray-700">إرفاق صور</span>
+                                        <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center"><i class="fa-solid fa-image text-blue-500 text-xs"></i></div>
                                     </div>
-                                    <div id="optFile" class="attach-item p-3 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
-                                        <span class="text-sm font-medium">إرفاق ملفات</span>
-                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-paperclip text-gray-500"></i></div>
+                                    <div id="optFile" class="attach-item p-2.5 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
+                                        <span class="text-xs font-bold text-gray-700">إرفاق ملفات</span>
+                                        <div class="w-8 h-8 bg-purple-50 rounded-full flex items-center justify-center"><i class="fa-solid fa-paperclip text-purple-500 text-xs"></i></div>
                                     </div>
-                                    <div id="optWeb" class="attach-item p-3 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
-                                        <span class="text-sm font-medium">البحث في الويب</span>
-                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-globe text-gray-500"></i></div>
+                                    <div id="optWeb" class="attach-item p-2.5 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
+                                        <span class="text-xs font-bold text-gray-700">البحث في الويب</span>
+                                        <div class="w-8 h-8 bg-green-50 rounded-full flex items-center justify-center"><i class="fa-solid fa-globe text-green-500 text-xs"></i></div>
                                     </div>
-                                    <div id="optBrain" class="attach-item p-3 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
-                                        <span class="text-sm font-medium">التفكير العميق</span>
-                                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-brain text-gray-500"></i></div>
+                                    <div id="optBrain" class="attach-item p-2.5 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
+                                        <span class="text-xs font-bold text-gray-700">التفكير العميق</span>
+                                        <div class="w-8 h-8 bg-yellow-50 rounded-full flex items-center justify-center"><i class="fa-solid fa-lightbulb text-yellow-500 text-xs"></i></div>
+                                    </div>
+                                    <div id="optModels" class="attach-item p-2.5 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between border-t border-gray-50 mt-1 pt-2">
+                                        <span class="text-xs font-bold text-gray-700">تبديل النموذج</span>
+                                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-robot text-gray-500 text-xs"></i></div>
                                     </div>
                                 </div>
                             </div>
@@ -115,7 +129,7 @@
                         <textarea id="chatInput" rows="1" placeholder="اسأل Afnan ai..." class="flex-1 bg-transparent border-none focus:ring-0 py-3 px-2 text-[16px] resize-none max-h-40 hide-scrollbar" dir="auto"></textarea>
                         
                         <div class="flex items-center gap-2 mb-1 mr-1">
-                            <button id="sendBtn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center disabled:opacity-50"><i class="fa-solid fa-arrow-up"></i></button>
+                            <button id="sendBtn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center disabled:opacity-50 transition-transform active:scale-95"><i class="fa-solid fa-arrow-up"></i></button>
                         </div>
                     </div>
                 </div>
@@ -123,8 +137,37 @@
         </div>
     </main>
 
+    <!-- Model Selection Modal -->
+    <div id="modelSelectModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[3000] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl animate-slideUp">
+            <div class="p-6 text-center border-b border-gray-50">
+                <h3 class="text-lg font-bold">اختر النموذج</h3>
+                <p class="text-xs text-gray-400 mt-1">حدد الذكاء الاصطناعي المناسب لمهمتك</p>
+            </div>
+            <div class="p-4 space-y-3">
+                <div onclick="window.selectModel('Afnan-1.5')" class="model-opt p-4 rounded-3xl border-2 border-gray-50 hover:border-black cursor-pointer transition-all flex items-center gap-4">
+                    <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 text-xl"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="text-right">
+                        <p class="font-bold text-sm">Afnan-1.5</p>
+                        <p class="text-[10px] text-gray-400">سريع وذكي للمهام اليومية</p>
+                    </div>
+                </div>
+                <div onclick="window.selectModel('Afnan-pro')" class="model-opt p-4 rounded-3xl border-2 border-gray-50 hover:border-black cursor-pointer transition-all flex items-center gap-4">
+                    <div class="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-500 text-xl"><i class="fa-solid fa-star"></i></div>
+                    <div class="text-right">
+                        <p class="font-bold text-sm">Afnan-pro</p>
+                        <p class="text-[10px] text-gray-400">الأقوى للمهام المعقدة والبرمجة</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50">
+                <button onclick="document.getElementById('modelSelectModal').classList.add('hidden')" class="w-full py-3 bg-white border border-gray-200 rounded-2xl font-bold text-sm">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Image Viewer Modal -->
-    <div id="imageViewer" class="fixed inset-0 bg-black z-[2000] hidden flex-col">
+    <div id="imageViewer" class="fixed inset-0 bg-black z-[4000] hidden flex-col">
         <div class="flex justify-between items-center p-6 text-white">
             <button onclick="window.closeImageViewer()" class="text-2xl"><i class="fa-solid fa-xmark"></i></button>
             <button id="deleteImageBtn" class="text-xl text-red-500"><i class="fa-solid fa-trash-can"></i></button>

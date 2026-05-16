@@ -5,6 +5,7 @@ import { collection, addDoc, query, where, getDocs, doc, updateDoc, orderBy, del
 let currentUser = null;
 let currentChatId = null;
 let pendingAttachment = null;
+let currentMode = null; // 'web', 'brain', 'Afnan-1.5', 'Afnan-pro'
 
 const dom = {
     sidebar: document.getElementById('sidebar'),
@@ -24,7 +25,11 @@ const dom = {
     attachmentPreview: document.getElementById('attachmentPreview'),
     imageViewer: document.getElementById('imageViewer'),
     viewerImg: document.getElementById('viewerImg'),
-    deleteImageBtn: document.getElementById('deleteImageBtn')
+    deleteImageBtn: document.getElementById('deleteImageBtn'),
+    activeModeIndicator: document.getElementById('activeModeIndicator'),
+    modeIcon: document.getElementById('modeIcon'),
+    cancelModeBtn: document.getElementById('cancelModeBtn'),
+    modelSelectModal: document.getElementById('modelSelectModal')
 };
 
 // Auth State Listener
@@ -83,44 +88,51 @@ dom.overlay.onclick = () => {
     dom.attachMenu.classList.add('hidden');
 };
 
-// Robust Attachment Toggle Logic
+// Attachment Toggle Logic
 const toggleAttachMenu = (e) => {
     if (e) {
         e.preventDefault();
         e.stopPropagation();
     }
-    const isHidden = dom.attachMenu.classList.contains('hidden');
-    if (isHidden) {
-        dom.attachMenu.classList.remove('hidden');
-        dom.attachMenu.style.display = 'block';
-    } else {
-        dom.attachMenu.classList.add('hidden');
-        dom.attachMenu.style.display = 'none';
-    }
+    dom.attachMenu.classList.toggle('hidden');
 };
 
-// Use both click and touchstart for maximum responsiveness
 if (dom.attachBtn) {
     dom.attachBtn.addEventListener('click', toggleAttachMenu);
-    dom.attachBtn.addEventListener('touchstart', (e) => {
-        toggleAttachMenu(e);
-    }, { passive: false });
 }
 
 const imageInput = document.getElementById('imageInput');
 const fileInput = document.getElementById('fileInput');
 
 // Option Listeners
-const optImage = document.getElementById('optImage');
-const optFile = document.getElementById('optFile');
-const optWeb = document.getElementById('optWeb');
-const optBrain = document.getElementById('optBrain');
+document.getElementById('optImage').onclick = (e) => { e.stopPropagation(); imageInput.click(); dom.attachMenu.classList.add('hidden'); };
+document.getElementById('optFile').onclick = (e) => { e.stopPropagation(); fileInput.click(); dom.attachMenu.classList.add('hidden'); };
+document.getElementById('optWeb').onclick = (e) => { e.stopPropagation(); window.activateMode('web', 'fa-globe'); dom.attachMenu.classList.add('hidden'); };
+document.getElementById('optBrain').onclick = (e) => { e.stopPropagation(); window.activateMode('brain', 'fa-lightbulb'); dom.attachMenu.classList.add('hidden'); };
+document.getElementById('optModels').onclick = (e) => { e.stopPropagation(); dom.modelSelectModal.classList.remove('hidden'); dom.attachMenu.classList.add('hidden'); };
 
-if (optImage) optImage.onclick = (e) => { e.stopPropagation(); imageInput.click(); dom.attachMenu.classList.add('hidden'); dom.attachMenu.style.display = 'none'; };
-if (optFile) optFile.onclick = (e) => { e.stopPropagation(); fileInput.click(); dom.attachMenu.classList.add('hidden'); dom.attachMenu.style.display = 'none'; };
-if (optWeb) optWeb.onclick = (e) => { e.stopPropagation(); window.toast("تم تفعيل البحث في الويب"); dom.attachMenu.classList.add('hidden'); dom.attachMenu.style.display = 'none'; };
-if (optBrain) optBrain.onclick = (e) => { e.stopPropagation(); window.toast("تم تفعيل التفكير العميق"); dom.attachMenu.classList.add('hidden'); dom.attachMenu.style.display = 'none'; };
+// Mode Logic
+window.activateMode = (mode, icon) => {
+    currentMode = mode;
+    dom.modeIcon.className = `fa-solid ${icon}`;
+    dom.activeModeIndicator.classList.remove('hidden');
+    dom.activeModeIndicator.classList.add('flex');
+    window.toast(`تم تفعيل وضع ${mode === 'web' ? 'البحث' : mode === 'brain' ? 'التفكير' : mode}`);
+};
 
+dom.cancelModeBtn.onclick = () => {
+    currentMode = null;
+    dom.activeModeIndicator.classList.add('hidden');
+    dom.activeModeIndicator.classList.remove('flex');
+};
+
+window.selectModel = (model) => {
+    const icon = model === 'Afnan-1.5' ? 'fa-bolt' : 'fa-star';
+    window.activateMode(model, icon);
+    dom.modelSelectModal.classList.add('hidden');
+};
+
+// Attachment Preview Logic (Inside Input)
 const showAttachmentPreview = (file, isImage) => {
     dom.attachmentPreview.innerHTML = '';
     dom.attachmentPreview.classList.remove('hidden');
@@ -128,19 +140,19 @@ const showAttachmentPreview = (file, isImage) => {
     reader.onload = (e) => {
         pendingAttachment = { name: file.name, data: e.target.result, type: isImage ? 'image' : 'file' };
         const item = document.createElement('div');
-        item.className = 'floating-preview';
+        item.className = 'relative w-16 h-16 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group';
         if (isImage) {
             item.innerHTML = `
-                <img src="${e.target.result}" onclick="window.openImageViewer('${e.target.result}')">
-                <div class="remove-btn" onclick="window.removeAttachment()"><i class="fa-solid fa-xmark"></i></div>
+                <img src="${e.target.result}" class="w-full h-full object-cover cursor-pointer" onclick="window.openImageViewer('${e.target.result}')">
+                <button onclick="window.removeAttachment()" class="absolute top-0.5 right-0.5 w-4 h-4 bg-black/50 text-white rounded-full flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-xmark"></i></button>
             `;
         } else {
             item.innerHTML = `
-                <div class="file-preview-icon" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f9f9f9; border-radius:1.2rem; font-size:24px; color:#666;">
-                    <i class="fa-solid fa-file"></i>
-                    <div style="font-size:8px; padding:2px; text-align:center; width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</div>
+                <div class="w-full h-full flex flex-col items-center justify-center bg-gray-50">
+                    <i class="fa-solid fa-file text-gray-400 text-lg"></i>
+                    <span class="text-[6px] px-1 truncate w-full text-center">${file.name}</span>
                 </div>
-                <div class="remove-btn" onclick="window.removeAttachment()"><i class="fa-solid fa-xmark"></i></div>
+                <button onclick="window.removeAttachment()" class="absolute top-0.5 right-0.5 w-4 h-4 bg-black/50 text-white rounded-full flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-xmark"></i></button>
             `;
         }
         dom.attachmentPreview.appendChild(item);
@@ -176,14 +188,13 @@ dom.deleteImageBtn.onclick = () => {
 imageInput.onchange = (e) => { if (e.target.files[0]) showAttachmentPreview(e.target.files[0], true); };
 fileInput.onchange = (e) => { if (e.target.files[0]) showAttachmentPreview(e.target.files[0], false); };
 
-// Global click handler to close menus
+// Global click handler
 window.addEventListener('click', (e) => {
     const popup = document.getElementById('profilePopup');
     if (popup) popup.style.display = 'none';
     
     if (dom.attachBtn && !dom.attachBtn.contains(e.target) && dom.attachMenu && !dom.attachMenu.contains(e.target)) {
         dom.attachMenu.classList.add('hidden');
-        dom.attachMenu.style.display = 'none';
     }
 });
 
@@ -283,6 +294,8 @@ window.handleSend = async () => {
     
     const currentText = val;
     const currentAttach = pendingAttachment;
+    const activeMode = currentMode;
+    
     dom.chatInput.value = '';
     window.removeAttachment();
 
@@ -293,11 +306,11 @@ window.handleSend = async () => {
     dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
 
     try {
-        const aiRes = "هذا رد تجريبي من النسخة الأصلية للفرونت اند.";
+        const aiRes = `هذا رد تجريبي باستخدام وضع: ${activeMode || 'الافتراضي'}.`;
         typing.remove();
         appendMessage('bot', aiRes);
 
-        const msgUser = { sender: 'user', text: currentText, attachment: currentAttach, timestamp: new Date() };
+        const msgUser = { sender: 'user', text: currentText, attachment: currentAttach, mode: activeMode, timestamp: new Date() };
         const msgBot = { sender: 'bot', text: aiRes, timestamp: new Date() };
 
         if (!currentChatId) {
@@ -335,9 +348,14 @@ window.toast = (msg) => {
     t.style.transform = 'translateX(-50%)';
     t.style.background = 'rgba(0,0,0,0.8)';
     t.style.color = 'white';
-    t.style.padding = '10px 20px';
+    t.style.padding = '8px 16px';
     t.style.borderRadius = '20px';
-    t.style.zIndex = '3000';
+    t.style.zIndex = '5000';
+    t.style.fontSize = '12px';
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 2000);
+};
+
+window.navigateToPage = (page) => {
+    window.location.href = page;
 };
