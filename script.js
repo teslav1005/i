@@ -85,14 +85,15 @@ dom.overlay.onclick = () => {
 
 // Attachment Logic
 dom.attachBtn.onclick = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     dom.attachMenu.classList.toggle('hidden');
 };
 
 const imageInput = document.getElementById('imageInput');
 const fileInput = document.getElementById('fileInput');
-document.getElementById('pickImage').onclick = () => imageInput.click();
-document.getElementById('pickFile').onclick = () => fileInput.click();
+document.getElementById('pickImage').onclick = (e) => { e.stopPropagation(); imageInput.click(); };
+document.getElementById('pickFile').onclick = (e) => { e.stopPropagation(); fileInput.click(); };
 
 const showAttachmentPreview = (file, isImage) => {
     dom.attachmentPreview.innerHTML = '';
@@ -150,10 +151,14 @@ dom.deleteImageBtn.onclick = () => {
 imageInput.onchange = (e) => { if (e.target.files[0]) showAttachmentPreview(e.target.files[0], true); };
 fileInput.onchange = (e) => { if (e.target.files[0]) showAttachmentPreview(e.target.files[0], false); };
 
-window.onclick = () => {
+window.onclick = (e) => {
     const popup = document.getElementById('profilePopup');
     if (popup) popup.style.display = 'none';
-    dom.attachMenu.classList.add('hidden');
+    
+    // Close attach menu if clicking outside
+    if (!dom.attachBtn.contains(e.target) && !dom.attachMenu.contains(e.target)) {
+        dom.attachMenu.classList.add('hidden');
+    }
 };
 
 dom.confirmNo.onclick = () => dom.logoutConfirm.style.display = 'none';
