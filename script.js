@@ -1,11 +1,12 @@
 import { auth, db } from './api.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { collection, addDoc, query, where, getDocs, doc, updateDoc, orderBy, deleteDoc, arrayUnion, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, addDoc, query, where, getDocs, doc, updateDoc, orderBy, deleteDoc, arrayUnion, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let currentUser = null;
 let currentChatId = null;
 let pendingAttachment = null;
-let currentMode = null; // 'web', 'brain', 'Afnan-1.5', 'Afnan-pro'
+let currentMode = null; 
+let unsubscribeHistory = null;
 
 const dom = {
     sidebar: document.getElementById('sidebar'),
@@ -28,8 +29,7 @@ const dom = {
     deleteImageBtn: document.getElementById('deleteImageBtn'),
     activeModeIndicator: document.getElementById('activeModeIndicator'),
     modeIcon: document.getElementById('modeIcon'),
-    cancelModeBtn: document.getElementById('cancelModeBtn'),
-    modelSelectModal: document.getElementById('modelSelectModal')
+    cancelModeBtn: document.getElementById('cancelModeBtn')
 };
 
 // Auth State Listener
@@ -42,6 +42,7 @@ onAuthStateChanged(auth, async (user) => {
         if (loginBtnHeader) loginBtnHeader.style.display = 'block';
         profileSection.innerHTML = '';
         dom.historyList.innerHTML = '';
+        if (unsubscribeHistory) unsubscribeHistory();
     } else {
         currentUser = user;
         if (loginBtnHeader) loginBtnHeader.style.display = 'none';
@@ -62,7 +63,7 @@ onAuthStateChanged(auth, async (user) => {
             </div>
         `;
         setupProfileListeners();
-        await loadChatHistory();
+        listenToChatHistory();
     }
 });
 
@@ -107,17 +108,17 @@ const fileInput = document.getElementById('fileInput');
 // Option Listeners
 document.getElementById('optImage').onclick = (e) => { e.stopPropagation(); imageInput.click(); dom.attachMenu.classList.add('hidden'); };
 document.getElementById('optFile').onclick = (e) => { e.stopPropagation(); fileInput.click(); dom.attachMenu.classList.add('hidden'); };
-document.getElementById('optWeb').onclick = (e) => { e.stopPropagation(); window.activateMode('web', 'fa-globe'); dom.attachMenu.classList.add('hidden'); };
-document.getElementById('optBrain').onclick = (e) => { e.stopPropagation(); window.activateMode('brain', 'fa-lightbulb'); dom.attachMenu.classList.add('hidden'); };
-document.getElementById('optModels').onclick = (e) => { e.stopPropagation(); dom.modelSelectModal.classList.remove('hidden'); dom.attachMenu.classList.add('hidden'); };
+document.getElementById('optWeb').onclick = (e) => { e.stopPropagation(); window.activateMode('web', 'fa-globe', '#22c55e'); dom.attachMenu.classList.add('hidden'); };
+document.getElementById('optBrain').onclick = (e) => { e.stopPropagation(); window.activateMode('brain', 'fa-lightbulb', '#eab308'); dom.attachMenu.classList.add('hidden'); };
 
 // Mode Logic
-window.activateMode = (mode, icon) => {
+window.activateMode = (mode, icon, color) => {
     currentMode = mode;
     dom.modeIcon.className = `fa-solid ${icon}`;
+    dom.modeIcon.style.color = color;
     dom.activeModeIndicator.classList.remove('hidden');
     dom.activeModeIndicator.classList.add('flex');
-    window.toast(`تم تفعيل وضع ${mode === 'web' ? 'البحث' : mode === 'brain' ? 'التفكير' : mode}`);
+    window.toast(`تم تفعيل وضع ${mode}`);
 };
 
 dom.cancelModeBtn.onclick = () => {
@@ -126,13 +127,12 @@ dom.cancelModeBtn.onclick = () => {
     dom.activeModeIndicator.classList.remove('flex');
 };
 
-window.selectModel = (model) => {
-    const icon = model === 'Afnan-1.5' ? 'fa-bolt' : 'fa-star';
-    window.activateMode(model, icon);
-    dom.modelSelectModal.classList.add('hidden');
+window.selectModel = (model, icon, color) => {
+    window.activateMode(model, icon, color);
+    dom.attachMenu.classList.add('hidden');
 };
 
-// Attachment Preview Logic (Inside Input)
+// Floating Attachment Preview (Above Input)
 const showAttachmentPreview = (file, isImage) => {
     dom.attachmentPreview.innerHTML = '';
     dom.attachmentPreview.classList.remove('hidden');
@@ -140,19 +140,19 @@ const showAttachmentPreview = (file, isImage) => {
     reader.onload = (e) => {
         pendingAttachment = { name: file.name, data: e.target.result, type: isImage ? 'image' : 'file' };
         const item = document.createElement('div');
-        item.className = 'relative w-16 h-16 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group';
+        item.className = 'relative w-24 h-24 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden group p-1';
         if (isImage) {
             item.innerHTML = `
-                <img src="${e.target.result}" class="w-full h-full object-cover cursor-pointer" onclick="window.openImageViewer('${e.target.result}')">
-                <button onclick="window.removeAttachment()" class="absolute top-0.5 right-0.5 w-4 h-4 bg-black/50 text-white rounded-full flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-xmark"></i></button>
+                <img src="${e.target.result}" class="w-full h-full object-cover rounded-xl cursor-pointer" onclick="window.openImageViewer('${e.target.result}')">
+                <button onclick="window.removeAttachment()" class="absolute top-1 right-1 w-5 h-5 bg-black/70 text-white rounded-full flex items-center justify-center text-[10px] border border-white shadow-sm"><i class="fa-solid fa-xmark"></i></button>
             `;
         } else {
             item.innerHTML = `
-                <div class="w-full h-full flex flex-col items-center justify-center bg-gray-50">
-                    <i class="fa-solid fa-file text-gray-400 text-lg"></i>
-                    <span class="text-[6px] px-1 truncate w-full text-center">${file.name}</span>
+                <div class="w-full h-full flex flex-col items-center justify-center bg-gray-50 rounded-xl">
+                    <i class="fa-solid fa-file text-gray-400 text-2xl"></i>
+                    <span class="text-[8px] px-1 truncate w-full text-center mt-1">${file.name}</span>
                 </div>
-                <button onclick="window.removeAttachment()" class="absolute top-0.5 right-0.5 w-4 h-4 bg-black/50 text-white rounded-full flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="window.removeAttachment()" class="absolute top-1 right-1 w-5 h-5 bg-black/70 text-white rounded-full flex items-center justify-center text-[10px] border border-white shadow-sm"><i class="fa-solid fa-xmark"></i></button>
             `;
         }
         dom.attachmentPreview.appendChild(item);
@@ -210,23 +210,24 @@ dom.newChatBtn.onclick = () => {
     if(window.innerWidth < 768) toggleSidebar(false);
 };
 
-// Chat History
-const loadChatHistory = async () => {
+// Real-time Chat History from Firestore
+const listenToChatHistory = () => {
     if (!currentUser) return;
-    try {
-        const q = query(collection(db, 'chats'), where('userId', '==', currentUser.uid), orderBy('updatedAt', 'desc'));
-        const snap = await getDocs(q);
+    if (unsubscribeHistory) unsubscribeHistory();
+
+    const q = query(collection(db, 'chats'), where('userId', '==', currentUser.uid), orderBy('updatedAt', 'desc'));
+    unsubscribeHistory = onSnapshot(q, (snap) => {
         dom.historyList.innerHTML = '';
         snap.forEach((docSnap) => {
             const chat = docSnap.data();
             const chatId = docSnap.id;
             const item = document.createElement('div');
-            item.className = `group flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 transition-all cursor-pointer text-sm text-gray-700`;
+            item.className = `group flex items-center justify-between p-3.5 rounded-2xl hover:bg-gray-100 transition-all cursor-pointer text-sm text-gray-700 ${currentChatId === chatId ? 'bg-gray-100' : ''}`;
             
             let preview = chat.title || 'محادثة جديدة';
             item.innerHTML = `
                 <div class="flex-1 min-w-0" onclick="window.loadChat('${chatId}')">
-                    <p class="truncate font-medium">${preview}</p>
+                    <p class="truncate font-bold text-xs">${preview}</p>
                 </div>
                 <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
                     <i class="fa-solid fa-trash text-[10px] text-gray-300 hover:text-red-500" onclick="event.stopPropagation(); window.deleteChat('${chatId}')"></i>
@@ -234,7 +235,7 @@ const loadChatHistory = async () => {
             `;
             dom.historyList.appendChild(item);
         });
-    } catch (e) { console.error(e); }
+    });
 };
 
 window.loadChat = async (chatId) => {
@@ -261,17 +262,17 @@ const appendMessage = (sender, text, attachment) => {
     let content = text;
     if (attachment) {
         if (attachment.type === 'image') content = `<img src="${attachment.data}" class="image-preview" onclick="window.openImageViewer('${attachment.data}')"><p class="mt-2">${text}</p>`;
-        else content = `<div class="flex items-center gap-2"><i class="fa-solid fa-file"></i> ${attachment.name}</div><p class="mt-2">${text}</p>`;
+        else content = `<div class="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100"><i class="fa-solid fa-file text-gray-400"></i> <span class="text-xs font-medium">${attachment.name}</span></div><p class="mt-2">${text}</p>`;
     }
 
     if (sender === 'user') {
-        div.innerHTML = `<div class="bg-[#F4F4F4] px-5 py-3.5 rounded-[1.8rem] rounded-tr-md max-w-[85%] text-gray-800 text-[15px]">${content}</div>`;
+        div.innerHTML = `<div class="bg-[#F4F4F4] px-5 py-3.5 rounded-[1.8rem] rounded-tr-md max-w-[85%] text-gray-800 text-[15px] shadow-sm">${content}</div>`;
     } else {
         div.innerHTML = `
             <div class="flex items-start gap-3 max-w-[85%]">
                 <img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" class="w-6 h-6 mt-1 shrink-0">
                 <div>
-                    <div class="bg-white border border-gray-100 px-5 py-3.5 rounded-[1.8rem] rounded-tl-md text-gray-800 text-[15px]">${content}</div>
+                    <div class="bg-white border border-gray-100 px-5 py-3.5 rounded-[1.8rem] rounded-tl-md text-gray-800 text-[15px] shadow-sm">${content}</div>
                 </div>
             </div>
         `;
@@ -281,7 +282,7 @@ const appendMessage = (sender, text, attachment) => {
 };
 
 window.deleteChat = async (chatId) => {
-    if (confirm("حذف المحادثة؟")) { await deleteDoc(doc(db, 'chats', chatId)); if (currentChatId === chatId) dom.newChatBtn.click(); await loadChatHistory(); }
+    if (confirm("حذف المحادثة؟")) { await deleteDoc(doc(db, 'chats', chatId)); if (currentChatId === chatId) dom.newChatBtn.click(); }
 };
 
 window.handleSend = async () => {
@@ -328,7 +329,6 @@ window.handleSend = async () => {
                 updatedAt: serverTimestamp()
             });
         }
-        await loadChatHistory();
     } catch (e) {
         console.error(e);
         typing.remove();

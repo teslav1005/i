@@ -10,6 +10,25 @@
     <link rel="stylesheet" href="app.css">
     <script src="security.js"></script>
     <script src="app.js" defer></script>
+    <style>
+        /* Floating Preview Animation */
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .floating-preview-container {
+            animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        /* Smooth Transitions */
+        .sidebar-transition { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .attach-item { transition: all 0.2s ease; }
+        .attach-item:hover { transform: translateX(-5px); }
+        /* Active Mode Icon Style */
+        #activeModeIndicator {
+            transition: all 0.3s ease;
+        }
+    </style>
 </head>
 <body class="antialiased text-gray-900">
 
@@ -22,14 +41,14 @@
     <!-- Sidebar -->
     <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-72 bg-[#fcfcfc] border-r border-gray-100 flex flex-col transform -translate-x-full md:translate-x-0 sidebar-transition h-full shadow-lg md:shadow-none">
         <div class="p-4 flex flex-col gap-4">
-            <button id="newChatBtn" class="flex items-center gap-3 w-full bg-white border border-gray-200 p-3.5 rounded-2xl hover:bg-gray-50 transition-all shadow-sm">
+            <button id="newChatBtn" class="flex items-center gap-3 w-full bg-white border border-gray-200 p-3.5 rounded-2xl hover:bg-gray-50 transition-all shadow-sm active:scale-95">
                 <img src="https://i.postimg.cc/TYd6FZy0/grok-image-x6em5fj-edit-96291120058942.png" alt="Logo" class="w-5 h-5">
                 <span class="font-bold text-gray-700 text-sm">محادثة جديدة</span>
             </button>
         </div>
         
         <div class="flex-1 overflow-y-auto px-4 space-y-2 hide-scrollbar" id="historyList">
-            <!-- Chat History -->
+            <!-- Chat History will be loaded here from Firestore -->
         </div>
 
         <div class="p-4 border-t border-gray-100 space-y-1">
@@ -73,31 +92,28 @@
         <div class="w-full bg-white p-4 md:p-8 pt-2 shrink-0 safe-pb">
             <div class="max-w-3xl mx-auto relative">
                 
-                <div class="chat-input-container bg-[#F4F4F4] rounded-[2.2rem] flex flex-col shadow-sm transition-all relative overflow-visible">
-                    
-                    <!-- Attachment Preview (Inside Input Container) -->
-                    <div id="attachmentPreview" class="px-4 pt-3 hidden flex-wrap gap-2">
-                        <!-- Preview content will be injected here -->
-                    </div>
+                <!-- Floating Attachment Preview (Above Input) -->
+                <div id="attachmentPreview" class="absolute bottom-full left-0 mb-4 hidden floating-preview-container" style="z-index: 500;">
+                    <!-- Preview content will be injected here -->
+                </div>
 
-                    <div class="flex items-end gap-1.5 p-1.5 focus-within:bg-white rounded-[2.2rem] relative">
+                <div class="chat-input-container bg-[#F4F4F4] rounded-[2.2rem] flex flex-col shadow-sm transition-all relative overflow-visible">
+                    <div class="flex items-end gap-1.5 p-1.5 focus-within:bg-white rounded-[2.2rem] relative transition-all duration-300">
                         
-                        <!-- Main Toggle Button -->
+                        <!-- Main Toggle Button & Active Mode -->
                         <div class="relative flex items-center gap-1">
-                            <button id="mainAttachBtn" type="button" class="w-11 h-11 flex items-center justify-center rounded-full text-gray-900 bg-white shadow-sm cursor-pointer transition-transform active:scale-95" style="z-index: 1100;">
+                            <button id="mainAttachBtn" type="button" class="w-11 h-11 flex items-center justify-center rounded-full text-gray-900 bg-white shadow-sm cursor-pointer transition-all active:scale-90" style="z-index: 1100;">
                                 <i class="fa-solid fa-plus text-lg pointer-events-none"></i>
                             </button>
 
-                            <!-- Active Mode Icon (Small, next to +) -->
-                            <div id="activeModeIndicator" class="hidden relative group">
-                                <div class="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-[10px] shadow-sm">
-                                    <i id="modeIcon" class="fa-solid fa-brain"></i>
-                                </div>
-                                <button id="cancelModeBtn" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] border border-white"><i class="fa-solid fa-xmark"></i></button>
+                            <!-- Active Mode Icon (No Background, Colored) -->
+                            <div id="activeModeIndicator" class="hidden relative group items-center justify-center w-8 h-8 transition-all duration-300">
+                                <i id="modeIcon" class="fa-solid fa-brain text-lg"></i>
+                                <button id="cancelModeBtn" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] border border-white shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-xmark"></i></button>
                             </div>
                             
-                            <!-- New Attachment Menu (Slimmer Design) -->
-                            <div id="mainAttachMenu" class="glass p-1.5 hidden" style="position: absolute; bottom: 55px; right: 0; width: 220px; z-index: 1200; border-radius: 1.8rem; box-shadow: 0 10px 30px rgba(0,0,0,0.12); animation: slideUp 0.2s ease-out;">
+                            <!-- Integrated Attachment & Model Menu -->
+                            <div id="mainAttachMenu" class="glass p-1.5 hidden" style="position: absolute; bottom: 55px; right: 0; width: 240px; z-index: 1200; border-radius: 2rem; box-shadow: 0 10px 40px rgba(0,0,0,0.15); animation: slideUp 0.2s ease-out;">
                                 <div class="space-y-0.5">
                                     <div id="optImage" class="attach-item p-2.5 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
                                         <span class="text-xs font-bold text-gray-700">إرفاق صور</span>
@@ -115,9 +131,16 @@
                                         <span class="text-xs font-bold text-gray-700">التفكير العميق</span>
                                         <div class="w-8 h-8 bg-yellow-50 rounded-full flex items-center justify-center"><i class="fa-solid fa-lightbulb text-yellow-500 text-xs"></i></div>
                                     </div>
-                                    <div id="optModels" class="attach-item p-2.5 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between border-t border-gray-50 mt-1 pt-2">
-                                        <span class="text-xs font-bold text-gray-700">تبديل النموذج</span>
-                                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-robot text-gray-500 text-xs"></i></div>
+                                    <!-- Integrated Models -->
+                                    <div class="border-t border-gray-50 my-1 pt-1">
+                                        <div onclick="window.selectModel('Afnan-1.5', 'fa-bolt', '#3b82f6')" class="attach-item p-2.5 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
+                                            <span class="text-xs font-bold text-gray-700">Afnan-1.5</span>
+                                            <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center"><i class="fa-solid fa-bolt text-blue-500 text-xs"></i></div>
+                                        </div>
+                                        <div onclick="window.selectModel('Afnan-pro', 'fa-star', '#a855f7')" class="attach-item p-2.5 hover:bg-gray-100 rounded-2xl cursor-pointer flex items-center justify-between">
+                                            <span class="text-xs font-bold text-gray-700">Afnan-pro</span>
+                                            <div class="w-8 h-8 bg-purple-50 rounded-full flex items-center justify-center"><i class="fa-solid fa-star text-purple-500 text-xs"></i></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -129,42 +152,13 @@
                         <textarea id="chatInput" rows="1" placeholder="اسأل Afnan ai..." class="flex-1 bg-transparent border-none focus:ring-0 py-3 px-2 text-[16px] resize-none max-h-40 hide-scrollbar" dir="auto"></textarea>
                         
                         <div class="flex items-center gap-2 mb-1 mr-1">
-                            <button id="sendBtn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center disabled:opacity-50 transition-transform active:scale-95"><i class="fa-solid fa-arrow-up"></i></button>
+                            <button id="sendBtn" class="w-11 h-11 bg-black text-white rounded-full flex items-center justify-center disabled:opacity-50 transition-all active:scale-90"><i class="fa-solid fa-arrow-up"></i></button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
-
-    <!-- Model Selection Modal -->
-    <div id="modelSelectModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[3000] hidden items-center justify-center p-4">
-        <div class="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl animate-slideUp">
-            <div class="p-6 text-center border-b border-gray-50">
-                <h3 class="text-lg font-bold">اختر النموذج</h3>
-                <p class="text-xs text-gray-400 mt-1">حدد الذكاء الاصطناعي المناسب لمهمتك</p>
-            </div>
-            <div class="p-4 space-y-3">
-                <div onclick="window.selectModel('Afnan-1.5')" class="model-opt p-4 rounded-3xl border-2 border-gray-50 hover:border-black cursor-pointer transition-all flex items-center gap-4">
-                    <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 text-xl"><i class="fa-solid fa-bolt"></i></div>
-                    <div class="text-right">
-                        <p class="font-bold text-sm">Afnan-1.5</p>
-                        <p class="text-[10px] text-gray-400">سريع وذكي للمهام اليومية</p>
-                    </div>
-                </div>
-                <div onclick="window.selectModel('Afnan-pro')" class="model-opt p-4 rounded-3xl border-2 border-gray-50 hover:border-black cursor-pointer transition-all flex items-center gap-4">
-                    <div class="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-500 text-xl"><i class="fa-solid fa-star"></i></div>
-                    <div class="text-right">
-                        <p class="font-bold text-sm">Afnan-pro</p>
-                        <p class="text-[10px] text-gray-400">الأقوى للمهام المعقدة والبرمجة</p>
-                    </div>
-                </div>
-            </div>
-            <div class="p-4 bg-gray-50">
-                <button onclick="document.getElementById('modelSelectModal').classList.add('hidden')" class="w-full py-3 bg-white border border-gray-200 rounded-2xl font-bold text-sm">إلغاء</button>
-            </div>
-        </div>
-    </div>
 
     <!-- Image Viewer Modal -->
     <div id="imageViewer" class="fixed inset-0 bg-black z-[4000] hidden flex-col">
