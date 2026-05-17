@@ -122,10 +122,19 @@ dom.overlay.onclick = () => {
 
 // Attachment Logic
 const toggleAttachMenu = (e) => {
-    e.stopPropagation();
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
     dom.attachMenu.classList.toggle('hidden');
+    console.log('Attach menu toggled:', !dom.attachMenu.classList.contains('hidden'));
 };
-dom.attachBtn.onclick = toggleAttachMenu;
+
+// Use both click and touchstart for maximum responsiveness
+dom.attachBtn.addEventListener('click', toggleAttachMenu);
+dom.attachBtn.addEventListener('touchstart', (e) => {
+    toggleAttachMenu(e);
+}, { passive: false });
 
 const imageInput = document.getElementById('imageInput');
 const fileInput = document.getElementById('fileInput');
@@ -385,8 +394,14 @@ window.toast = (msg) => {
 };
 
 window.navigateToPage = (page) => window.location.href = page;
-window.addEventListener('click', () => {
-    dom.modelDropdown.classList.add('hidden');
-    dom.contextMenu.style.display = 'none';
-    dom.attachMenu.classList.add('hidden');
+window.addEventListener('click', (e) => {
+    if (!dom.modelSelectorTop.contains(e.target)) {
+        dom.modelDropdown.classList.add('hidden');
+    }
+    if (!dom.contextMenu.contains(e.target)) {
+        dom.contextMenu.style.display = 'none';
+    }
+    if (!dom.attachBtn.contains(e.target) && !dom.attachMenu.contains(e.target)) {
+        dom.attachMenu.classList.add('hidden');
+    }
 });
