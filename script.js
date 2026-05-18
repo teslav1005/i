@@ -7,6 +7,7 @@ let currentChatId = null;
 let pendingAttachment = null;
 let currentMode = null; 
 let currentModel = 'Afnan-Fishe';
+let messageCount = 0;
 let unsubscribeHistory = null;
 let longPressTimer = null;
 let activeContextChatId = null;
@@ -72,8 +73,8 @@ onAuthStateChanged(auth, async (user) => {
                 <i class="fa-solid fa-ellipsis-vertical text-gray-300 text-xs"></i>
             </div>
             <div id="profilePopup" class="glass p-2 space-y-1" style="display:none; position:absolute; bottom:70px; left:10px; width:220px; z-index:200; border-radius:1.5rem; box-shadow:0 10px 25px rgba(0,0,0,0.1);">
-                <a href="javascript:void(0)" onclick="window.navigateToPage('privacy.html')" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">سياسة الخصوصية</a>
-                <a href="javascript:void(0)" onclick="window.navigateToPage('terms.html')" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">اتفاقية المستخدم</a>
+<a href="privacy.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">سياسة الخصوصية</a>
+<a href="terms.html" class="block p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">اتفاقية المستخدم</a>
                 <button id="logoutBtn" class="w-full text-right p-3 text-sm hover:bg-gray-100 rounded-xl transition-all">تسجيل الخروج</button>
                 <button id="deleteAccountBtn" class="w-full text-right p-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-all">حذف الحساب</button>
             </div>
@@ -87,8 +88,26 @@ const setupProfileListeners = () => {
     const trigger = document.getElementById('profileTrigger');
     const popup = document.getElementById('profilePopup');
     if (trigger) trigger.onclick = (e) => { e.stopPropagation(); popup.style.display = popup.style.display === 'block' ? 'none' : 'block'; };
-    document.getElementById('logoutBtn').onclick = () => dom.logoutConfirm.style.display = 'flex';
+    document.getElementById('logoutBtn').onclick = () => {
+        dom.logoutConfirm.style.display = 'flex';
+        dom.logoutConfirm.classList.remove('hidden');
+    };
     document.getElementById('deleteAccountBtn').onclick = () => window.navigateToPage('delete-account.html');
+    
+    // Logout confirmation logic
+    document.getElementById('confirmYes').onclick = async () => {
+        try {
+            await signOut(auth);
+            dom.logoutConfirm.style.display = 'none';
+            window.location.reload();
+        } catch (error) {
+            console.error('Logout error:', error);
+            window.toast("خطأ في تسجيل الخروج");
+        }
+    };
+    document.getElementById('confirmNo').onclick = () => {
+        dom.logoutConfirm.style.display = 'none';
+    };
 };
 
 // Model Selector Logic
@@ -335,7 +354,18 @@ window.copyText = (text) => {
 window.handleSend = async () => {
     const val = dom.chatInput.value.trim();
     if (!val && !pendingAttachment) return;
-    if (!currentUser) { window.navigateToPage('login.html'); return; }
+
+    // Check message limit for Fishe model before login
+    if (currentModel === 'Afnan-Fishe' && !currentUser) {
+        messageCount++;
+        if (messageCount > 3) {
+            window.navigateToPage('login.html');
+            return;
+        }
+    } else if (!currentUser) {
+        window.navigateToPage('login.html');
+        return;
+    }
 
     dom.emptyView.style.display = 'none';
     appendMessage('user', val, pendingAttachment);

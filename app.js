@@ -39,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let diff = e.changedTouches[0].clientY - startY;
         indicator.style.top = "-50px";
         pulling = false;
-        if (diff > 120) location.reload();
+        // Disabled refresh on pull as requested
+        // if (diff > 120) location.reload();
     });
 });
