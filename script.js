@@ -91,6 +91,8 @@ const setupProfileListeners = () => {
     document.getElementById('logoutBtn').onclick = () => {
         dom.logoutConfirm.style.display = 'flex';
         dom.logoutConfirm.classList.remove('hidden');
+        // Hide profile popup when logout confirm shows
+        document.getElementById('profilePopup').style.display = 'none';
     };
     document.getElementById('deleteAccountBtn').onclick = () => window.navigateToPage('delete-account.html');
     

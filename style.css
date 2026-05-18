@@ -1,5 +1,5 @@
 :root { --header-h: 60px; }
-html, body { height: var(--app-height); width: 100%; margin: 0; padding: 0; overflow: auto; overscroll-behavior: contain; background-color: white; -webkit-tap-highlight-color: transparent; font-family: system-ui, -apple-system, sans-serif; }
+html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: auto; background-color: white; -webkit-tap-highlight-color: transparent; font-family: system-ui, -apple-system, sans-serif; }
 @supports (-webkit-touch-callout: none) {
     body {
         height: -webkit-fill-available;
@@ -44,7 +44,7 @@ header {
     bottom: 70px;
     left: 10px;
     width: 220px;
-    z-index: 200;
+    z-index: 9999;
     border-radius: 1.5rem;
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 }
@@ -54,9 +54,11 @@ header {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.4);
-    z-index: 300;
+    z-index: 99999;
     align-items: center;
     justify-content: center;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 #attachMenu {
